@@ -226,17 +226,30 @@ curl -fsSI https://<origin>/admin | grep -i x-robots-tag
 
 | Route | Purpose |
 | --- | --- |
-| `GET /admin/login` | Sign-in form |
+| `GET /admin/login` | Sign-in form. Outside the guard, so it cannot lock itself out. |
 | `POST /admin/login` | **Server Action** — not a REST endpoint |
-| `GET /admin` | Dashboard (dashboard layout: movies, reviews, genres, links, reports, audit, settings) |
-| `GET /admin/logout` | — sign-out is a Server Action on the form, not a GET |
-| `GET /admin/forbidden` | Shown when a signed-in admin lacks the role for a page |
+| `GET /admin` | Dashboard |
+| `GET /admin/forbidden` | Shown when a signed-in admin lacks the role for a page. Outside the guard. |
 | `GET /api/health` | Public health check, no auth |
 
-There is no `/api/admin/*` REST surface and no public sign-up. The only unauthenticated entry point
-into the admin area is `/admin/login`.
+Sign-out is a Server Action (`signOutAction` in `src/lib/actions/auth.ts`) that clears the cookie and
+redirects to `/admin/login`. **There is no `/admin/logout` route** — do not link to one.
 
-### 4.2 How a session is actually established
+### 4.2 Where authentication is actually enforced
+
+`src/middleware.ts` does **not** authenticate. It only stamps the CSP header. Authentication is
+enforced in the **`(dashboard)` route-group layout**, which calls `requireAdmin("/admin")`:
+
+- No valid session → redirect to `/admin/login?next=…`
+- The role is **re-read from the database on that request**, so disabling an account or changing a
+  role takes effect on the very next request. The role claim inside the JWT is never trusted alone.
+- Each nested page then checks the specific permission it needs.
+- `/admin/login` and `/admin/forbidden` sit *outside* the route group so they stay reachable.
+
+This is why there is no `/api/admin/*` REST surface and no public sign-up. `/admin/login` is the only
+unauthenticated entry point into the admin area.
+
+### 4.3 How a session is actually established
 
 The sign-in form posts to the `signInAction` Server Action in `src/lib/actions/auth.ts`. There is no
 `fetch` to write — the `<form>` action *is* the endpoint:
@@ -258,7 +271,7 @@ only `userId`, `email`, `displayName` and `role` — no secrets, no authorizatio
 Because it is httpOnly, **you cannot log in by setting a cookie by hand** and there is no
 `Authorization: Bearer` header path. The browser form is the only way in.
 
-### 4.3 Why the browser is the only client
+### 4.4 Why the browser is the only client
 
 - **Authorization re-reads the database.** `getCurrentAdmin` re-reads the role on every request; the
   role in the token is never trusted alone. A hand-crafted token fails immediately.
@@ -268,7 +281,7 @@ Because it is httpOnly, **you cannot log in by setting a cookie by hand** and th
   no separate CSRF token to obtain.
 - **`?next=` is allow-listed.** `safeInternalRedirect` discards any off-site target.
 
-### 4.4 First sign-in
+### 4.5 First sign-in
 
 1. `pnpm admin:create` against the target database (§2.4).
 2. Visit `https://<origin>/admin/login`.
@@ -278,7 +291,7 @@ Because it is httpOnly, **you cannot log in by setting a cookie by hand** and th
 Then, from `/admin/settings`, create any further administrators and give each the **lowest** role
 that lets them work. `recordAudit` records every sign-in and sign-out.
 
-### 4.5 Scripted access, if you need it
+### 4.6 Scripted access, if you need it
 
 Use Playwright, which drives the real form and keeps the httpOnly cookie for you. The suite already
 does this — `signInAsAdmin` in `tests/e2e/helpers.ts`. Note that these specs **mutate live records
