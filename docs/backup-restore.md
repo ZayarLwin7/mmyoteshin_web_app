@@ -212,7 +212,7 @@ Separately, rehearse a rollback, not just a restore:
 2. Roll back to the previous deployment.
 3. Confirm the site works and the database is still consistent.
 
-This verifies the additive-migration claim in `docs/deployment.md` §3 rather than trusting it.
+This verifies the additive-migration claim in `docs/deployment.md` §5 rather than trusting it.
 
 ---
 

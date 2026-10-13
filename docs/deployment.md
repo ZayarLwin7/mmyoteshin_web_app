@@ -13,7 +13,7 @@ rollback.
 | Component | Recommendation | Notes |
 | --- | --- | --- |
 | Application | Vercel, or any Node 22 host that runs `next start` | Server actions and `revalidate` need a Node runtime, not a static export |
-| Database | Supabase Postgres 17 | Use the **session-mode pooler** connection string |
+| Database | Supabase Postgres 17 | **Which pooler depends on the host** — see §2.1. A long-lived Node host uses the session pooler; serverless uses the transaction pooler. |
 | DNS / TLS | Managed by the host | HTTPS is mandatory: the session cookie is `Secure` in production |
 
 Two environments, two **separate** Supabase projects. Never point staging at the production database
@@ -26,9 +26,18 @@ Two environments, two **separate** Supabase projects. Never point staging at the
 ### 2.1 Provision the database
 
 1. Create a Supabase project.
-2. From **Project Settings → Database**, copy the **pooler** connection string (session mode, port
-   5432). The direct connection is not suitable: the app runs on serverless instances and needs
-   pooling.
+2. From **Project Settings → Database**, copy a **pooler** connection string. Which one depends on
+   where the app runs:
+   - **Long-lived Node host** (`next start`, a VM, a container) → session-mode pooler, port **5432**.
+     One process, a small pool, prepared statements work. This is the fastest option.
+   - **Serverless** (Vercel, Netlify functions) → transaction-mode pooler, port **6543**. The app
+     auto-detects the port and switches `prepare` off, so **correctness is preserved**; the cost is a
+     second round trip per parameterised query, which halves database speed. That trade is
+     mandatory: a session-mode pooler pins one server connection per client for its lifetime, so
+     every concurrent serverless instance holds one and the project's client budget is exhausted
+     within minutes of real traffic.
+
+   The direct connection string is not suitable for either — no pooling.
 3. Keep the password in the host's secret store, not in the repository.
 
 ### 2.2 Configure environment variables
@@ -117,7 +126,172 @@ site.
 
 ---
 
-## 3. Routine deploys
+## 3. Deploying to Vercel
+
+The repository is a standard Next.js 16 App Router project. Vercel detects it automatically — no
+`vercel.json` is required.
+
+### 3.1 One-time project setup
+
+```bash
+# from the repository root, after the code is pushed to GitHub
+npm i -g vercel          # or: npx vercel
+vercel login
+vercel link              # pick the team, then create/link the project
+```
+
+Or, in the dashboard: **Add New → Project → Import Git Repository**, and point it at the repo.
+Vercel then builds and deploys on every push to `main`.
+
+### 3.2 Environment variables
+
+Set these under **Project → Settings → Environment Variables**, for the **Production** environment
+(and separately for **Preview** if you want preview deployments to work):
+
+| Variable | Value | Notes |
+| --- | --- | --- |
+| `DATABASE_URL` | transaction pooler, port **6543** | Mandatory on serverless — see §2.1 |
+| `SESSION_SECRET` | 48 random bytes | `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` |
+| `NEXT_PUBLIC_SITE_URL` | `https://<your-domain>` | **Must be set before the first build.** Canonicals, OG URLs and the sitemap derive from it, and it is inlined into the browser bundle. |
+| `NEXT_PUBLIC_SITE_NAME` | `MM YoteShin` | |
+| `NEXT_PUBLIC_SITE_DESCRIPTION` | … | |
+| `NEXT_PUBLIC_IMAGE_HOSTS` | `https://…` comma-separated, https only | The image optimiser allowlist |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | … | Shown on `/contact` |
+| `NEXT_PUBLIC_TAKEDOWN_EMAIL` | … | Shown on `/copyright`; must be a monitored mailbox |
+| `RATE_LIMIT_AUTH_MAX` / `_WINDOW_SECONDS` | `10` / `300` | |
+| `RATE_LIMIT_REPORT_MAX` / `_WINDOW_SECONDS` | `5` / `3600` | |
+| `RATE_LIMIT_SEARCH_MAX` / `_WINDOW_SECONDS` | `60` / `60` | |
+| `SESSION_TTL_HOURS` | `12` | |
+
+Leave `NEXT_PUBLIC_ADS_ENABLED=false`, `NEXT_PUBLIC_ANALYTICS_ENABLED=false`,
+`ALLOW_DEV_SEED=0`. Never set `ALLOW_DEV_SEED=1` on a deployed environment.
+
+`SESSION_SECRET` **must differ per environment.** A shared value makes a staging session valid in
+production. Rotating it invalidates every active admin session.
+
+### 3.3 Migrate and create the first administrator
+
+Vercel does not run `pnpm db:migrate` as part of a build. Run both against the **production**
+`DATABASE_URL` from your machine, before the first deploy that serves traffic:
+
+```bash
+DATABASE_URL="postgresql://…:6543/postgres" pnpm db:migrate
+DATABASE_URL="postgresql://…:6543/postgres" pnpm db:check
+DATABASE_URL="postgresql://…:6543/postgres" pnpm admin:create
+```
+
+`pnpm build` connects to the database to prerender the catalogue, so a database that has not been
+migrated makes the build fail. That is deliberate.
+
+`pnpm admin:create` is interactive and creates an **owner**. There is no public sign-up.
+
+### 3.4 Deploy
+
+```bash
+vercel --prod
+```
+
+Or push to `main` if you imported the repository. After the first deploy, set the real domain
+(**Project → Settings → Domains**), update `NEXT_PUBLIC_SITE_URL` to it, and redeploy so the
+canonicals are right.
+
+### 3.5 Verify
+
+```bash
+curl -fsS https://<origin>/api/health
+curl -fsSI https://<origin>/ | grep -i strict-transport-security
+curl -fsS https://<origin>/robots.txt
+curl -fsS https://<origin>/sitemap.xml | head
+curl -fsSI https://<origin>/admin | grep -i x-robots-tag
+```
+
+### 3.6 Vercel-specific caveats
+
+- **Connection budget.** Watch Supabase's connection count in the first hour. With the session
+  pooler on serverless it climbs monotonically; with the transaction pooler it plateaus.
+- **Cold starts pay the TLS handshake.** A fresh serverless instance pays ~2.2 s to open its first
+  Postgres connection. `idle_timeout: 300` in `src/db/client.ts` keeps warm instances from paying it
+  twice, but a cold instance will.
+- **`searchParams` opts catalogue routes out of ISR.** Only `/movies/[slug]` is genuinely cached on
+  the CDN; `/movies` and `/search` re-render per request and hit the database.
+- **Serverless has no local disk.** Everything the build needs must be in the repository or fetched
+  at request time — which is why the fonts are self-hosted in `src/app/fonts/` rather than pulled
+  from Google Fonts at build time.
+
+---
+
+## 4. Admin access — routes and the sign-in flow
+
+### 4.1 The endpoints
+
+| Route | Purpose |
+| --- | --- |
+| `GET /admin/login` | Sign-in form |
+| `POST /admin/login` | **Server Action** — not a REST endpoint |
+| `GET /admin` | Dashboard (dashboard layout: movies, reviews, genres, links, reports, audit, settings) |
+| `GET /admin/logout` | — sign-out is a Server Action on the form, not a GET |
+| `GET /admin/forbidden` | Shown when a signed-in admin lacks the role for a page |
+| `GET /api/health` | Public health check, no auth |
+
+There is no `/api/admin/*` REST surface and no public sign-up. The only unauthenticated entry point
+into the admin area is `/admin/login`.
+
+### 4.2 How a session is actually established
+
+The sign-in form posts to the `signInAction` Server Action in `src/lib/actions/auth.ts`. There is no
+`fetch` to write — the `<form>` action *is* the endpoint:
+
+```
+browser  ──POST /admin/login──▶  Next.js Server Action
+                                    ├─ rateLimitAuth(fingerprint)      ← before any hashing
+                                    ├─ loginSchema.safeParse(...)      ← Zod
+                                    ├─ signIn(email, password)         ← Argon2id verify
+                                    │    └─ per-account lockout in the service layer
+                                    ├─ establishSession(...)           ← sets the cookie
+                                    └─ redirect(safeInternalRedirect(redirectTo, "/admin"))
+```
+
+The cookie is `mmy_session`: **httpOnly**, `SameSite=Lax`, `Secure` in production, `Path=/`,
+`maxAge = SESSION_TTL_HOURS × 3600`. It holds an HS256 JWT signed with `SESSION_SECRET` carrying
+only `userId`, `email`, `displayName` and `role` — no secrets, no authorization references.
+
+Because it is httpOnly, **you cannot log in by setting a cookie by hand** and there is no
+`Authorization: Bearer` header path. The browser form is the only way in.
+
+### 4.3 Why the browser is the only client
+
+- **Authorization re-reads the database.** `getCurrentAdmin` re-reads the role on every request; the
+  role in the token is never trusted alone. A hand-crafted token fails immediately.
+- **Rate limiting and lockout** are keyed to the client fingerprint and the account, so a script that
+  retries gets throttled per IP and per account.
+- **CSRF is covered by the framework.** Server Actions are POST-only with origin checks, so there is
+  no separate CSRF token to obtain.
+- **`?next=` is allow-listed.** `safeInternalRedirect` discards any off-site target.
+
+### 4.4 First sign-in
+
+1. `pnpm admin:create` against the target database (§2.4).
+2. Visit `https://<origin>/admin/login`.
+3. Enter the email and password given at creation.
+4. You land on `/admin`.
+
+Then, from `/admin/settings`, create any further administrators and give each the **lowest** role
+that lets them work. `recordAudit` records every sign-in and sign-out.
+
+### 4.5 Scripted access, if you need it
+
+Use Playwright, which drives the real form and keeps the httpOnly cookie for you. The suite already
+does this — `signInAsAdmin` in `tests/e2e/helpers.ts`. Note that these specs **mutate live records
+with no teardown**, so point them at a disposable database, never production:
+
+```bash
+E2E_ADMIN_EMAIL="you@example.com" E2E_ADMIN_PASSWORD="…" \
+E2E_BASE_URL="https://<origin>" pnpm test:e2e
+```
+
+---
+
+## 5. Routine deploys
 
 ```bash
 # 1. Migrate first. Migrations are additive and backward compatible.
@@ -147,7 +321,7 @@ Then in a browser: load the home page, open a film, and sign in to `/admin`.
 
 ---
 
-## 4. Rollback
+## 6. Rollback
 
 ### Application
 
@@ -174,7 +348,7 @@ project owner, not an on-call engineer.
 
 ---
 
-## 5. Monitoring
+## 7. Monitoring
 
 ### Health check
 
@@ -212,7 +386,7 @@ authorization references. If a log line would be sensitive, it is not logged.
 
 ---
 
-## 6. Scaling notes
+## 8. Scaling notes
 
 - The database connection pool is intentionally small (2 in development, 5 in production) because
   serverless instances are short-lived and the Supabase pooler has a connection budget. Raising it
@@ -226,7 +400,7 @@ authorization references. If a log line would be sensitive, it is not logged.
 
 ---
 
-## 7. Launch checklist
+## 9. Launch checklist
 
 - [ ] `pnpm verify` clean locally
 - [ ] Staging deployed and smoke-tested
