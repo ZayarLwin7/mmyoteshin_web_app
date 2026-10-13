@@ -1,0 +1,19 @@
+# Build output and generated files — never format these.
+.next/
+out/
+build/
+coverage/
+next-env.d.ts
+
+# Dependency and package-manager artefacts.
+node_modules/
+pnpm-lock.yaml
+
+# Test artefacts.
+test-results/
+playwright-report/
+blob-report/
+
+# Docs are authored prose; Prettier's Markdown reflow fights with tables and
+# long code blocks more often than it helps.
+*.md

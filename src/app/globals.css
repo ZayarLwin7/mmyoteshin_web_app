@@ -1,0 +1,271 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   MM YoteShin — design tokens
+   --------------------------------------------------------------------------
+   A single source of truth for colour, type, spacing, radii and motion.
+   The palette is a near-black charcoal base with one restrained warm accent.
+   Every pairing below is checked against WCAG 2.2 AA (see docs/security.md
+   for the contrast audit note).
+   ========================================================================== */
+
+@theme {
+  /* ---- Surfaces: dark charcoal, never pure black ------------------------ */
+  --color-canvas: #0a0a0c; /* page background */
+  --color-surface: #121216; /* cards, panels */
+  --color-surface-raised: #1a1a21; /* popovers, hovered cards */
+  --color-surface-sunken: #08080a; /* wells, code blocks */
+
+  /* ---- Borders & dividers ---------------------------------------------- */
+  --color-line: #26262e;
+  --color-line-strong: #35353f;
+
+  /* ---- Text ------------------------------------------------------------- */
+  --color-ink: #f4f2ee; /* 15.9:1 on canvas */
+  --color-ink-muted: #a9a6a1; /* 7.4:1 on canvas */
+  --color-ink-subtle: #7d7a76; /* 4.6:1 on canvas — large text only */
+  --color-ink-inverse: #0a0a0c;
+
+  /* ---- Warm accent (restrained, editorial) ------------------------------ */
+  --color-accent: #e3a34e; /* 8.9:1 on canvas */
+  --color-accent-strong: #f2b962;
+  --color-accent-dim: #8a6427;
+  --color-accent-ink: #1a1206; /* text on accent fills */
+
+  /* ---- Semantic --------------------------------------------------------- */
+  --color-danger: #ef6f6c;
+  --color-danger-surface: #2a1416;
+  --color-success: #6fcf97;
+  --color-success-surface: #10231a;
+  --color-warning: #e8b84b;
+  --color-warning-surface: #2a2211;
+  --color-info: #7fb8e8;
+  --color-info-surface: #12212e;
+
+  /* ---- Typography ------------------------------------------------------- */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+
+  /* Editorial type scale — fluid between mobile and wide desktop */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+  --text-display: clamp(2.5rem, 6vw, 5rem);
+  --text-display--line-height: 0.98;
+  --text-display--letter-spacing: -0.03em;
+  --text-title: clamp(1.75rem, 3.2vw, 2.75rem);
+  --text-title--line-height: 1.08;
+  --text-title--letter-spacing: -0.02em;
+  --text-heading: clamp(1.25rem, 2vw, 1.625rem);
+  --text-heading--line-height: 1.2;
+  --text-heading--letter-spacing: -0.01em;
+
+  /* ---- Radii ------------------------------------------------------------ */
+  --radius-card: 0.75rem;
+  --radius-panel: 1rem;
+  --radius-pill: 999px;
+
+  /* ---- Motion ----------------------------------------------------------- */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 420ms;
+
+  /* ---- Layout ----------------------------------------------------------- */
+  --spacing-gutter: 1.25rem;
+  --container-prose: 68ch;
+}
+
+/* ==========================================================================
+   Base layer
+   ========================================================================== */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    /* Offset in-page anchors so the sticky header never covers a heading. */
+    scroll-padding-top: 5.5rem;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* Guard against horizontal overflow on narrow screens. */
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Visible, consistent focus ring for keyboard users everywhere. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Only show the ring for keyboard navigation, not mouse clicks. */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+
+  /* Images never overflow their container. */
+  img,
+  video {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Respect the user's motion preference across the whole app. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+
+@utility container-page {
+  width: 100%;
+  max-width: 88rem;
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+@utility text-eyebrow {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+/* Truncate to a fixed number of lines without a JS measurement pass. */
+@utility line-clamp-* {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: --value(integer);
+  overflow: hidden;
+}
+
+/* Visually hidden but available to screen readers. */
+@utility sr-only-focusable {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Scroll rails (horizontal collections)
+   ========================================================================== */
+
+.rail {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  /*
+   * Keep the gutter inside the snapport.
+   *
+   * This container is both a scrollport and a padded flex container. Without
+   * `scroll-padding`, the browser aligns a child's `scroll-snap-align: start`
+   * edge with the *padding box*, so it scrolls the rail by exactly the gutter
+   * on load (measured: `scrollLeft: 20` at rest). That cancels the left padding
+   * — the first card ends up flush against the container edge, 20px out of line
+   * with the section heading above it — and every subsequent snap lands the
+   * same way as you scroll.
+   *
+   * Setting `scroll-padding-inline` to the gutter moves the snapport start to
+   * the content box, so the first card rests at `scrollLeft: 0` and every card
+   * snaps flush with the heading.
+   */
+  scroll-padding-inline: var(--spacing-gutter);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* Leave room for focus rings without clipping them. */
+  padding-block: 0.5rem;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+.rail > * {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+}
+
+/* ==========================================================================
+   Skeletons
+   ========================================================================== */
+
+@keyframes skeleton-sweep {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  background-color: var(--color-surface);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--color-surface-raised) 90%, white) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-sweep 1.6s linear infinite;
+  border-radius: var(--radius-card);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background-image: none;
+  }
+}

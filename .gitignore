@@ -1,0 +1,60 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+# ...but the placeholder template must be committed — it documents every
+# variable a new checkout needs and contains no real values.
+!.env.example
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# database backups — a dump contains private authorization evidence
+# (download_links.authorization_reference) and Argon2id password hashes.
+# Never commit these; move them to the independent storage location instead.
+# See docs/backup-restore.md §3.
+/backups/
+
+# agent working memory — local session notes, not product code.
+# Contains internal reasoning and session narrative; not for the repository.
+/.workbuddy-ai/
