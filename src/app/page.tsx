@@ -98,7 +98,7 @@ export default async function HomePage() {
         id="rail-top-rated"
         eyebrow="Highest rated"
         title="Best reviewed"
-        description="Ranked by our editorial score, on a documented 0–10 scale."
+        description="Ranked by our editorial score, out of 10. Never an aggregate of user votes or of a third-party service."
         movies={topRated}
       />
 

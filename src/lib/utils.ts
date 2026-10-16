@@ -147,6 +147,22 @@ export function formatRating(
   return `${trimmed} / ${Number.isInteger(max) ? max.toFixed(0) : max}`;
 }
 
+/**
+ * Render just the top of a rating scale for display.
+ *
+ * `rating_scale` is a `numeric(4,1)`, so the driver hands back `"10.0"` for the
+ * default ten-point scale — and `/10.0` reads like a decimal score rather than
+ * a maximum. A whole number loses its trailing zero; a genuinely fractional
+ * scale (a five-point scale stored as `5.0` is the same case; only something
+ * like `7.5` keeps its fraction) is left alone.
+ */
+export function formatRatingScale(scale: string | number | null | undefined): string {
+  if (scale === null || scale === undefined || scale === "") return "10";
+  const value = typeof scale === "string" ? Number.parseFloat(scale) : scale;
+  if (!Number.isFinite(value) || value <= 0) return "10";
+  return Number.isInteger(value) ? value.toFixed(0) : String(value);
+}
+
 /** Sentence-case a database enum value for display: `pending_review` → `Pending review`. */
 export function humaniseEnum(value: string): string {
   const spaced = value.replace(/_/g, " ");

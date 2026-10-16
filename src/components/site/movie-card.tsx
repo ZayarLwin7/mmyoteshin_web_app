@@ -6,6 +6,7 @@ import type { MovieCard as MovieCardData } from "@/db/queries/public";
 
 import { MetaRow } from "./meta-row";
 import { Poster } from "./poster";
+import { RatingBadge } from "./rating-badge";
 
 /**
  * Catalogue card.
@@ -34,16 +35,31 @@ export function MovieCard({
         // so the card has to follow the record's own kind rather than assume
         // `/movies/`.
         href={movie.contentKind === "series" ? `/series/${movie.slug}` : `/movies/${movie.slug}`}
-        className="rounded-card focus-visible:outline-accent block transition-transform duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-4 active:scale-[0.98]"
+        /*
+          The press state is a combination, because any one of these alone is too
+          subtle on a card this size: the whole card shrinks, the poster dims
+          slightly, and an accent ring appears around the frame. Together they
+          answer "yes, that press registered" without moving the card so far
+          that it loses its place in the grid.
+        */
+        className="rounded-card focus-visible:outline-accent block transition-transform duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-4 active:scale-[0.96]"
       >
-        <Poster
-          src={movie.posterUrl}
-          alt=""
-          sizes={sizes}
-          priority={priority}
-          fallbackLabel={movie.title}
-          className="transition-transform duration-300 ease-out group-hover:-translate-y-1"
-        />
+        {/*
+          The ring lives on the poster frame rather than on the Link, so it is
+          clipped to the card's rounded corners and sits exactly on the artwork
+          edge. `group-active:` is used rather than `active:` so it follows the
+          card's press anywhere within it, not just on the frame itself.
+        */}
+        <div className="rounded-card ring-accent/0 group-hover:ring-accent/50 group-active:ring-accent ring-2 transition-all duration-150">
+          <Poster
+            src={movie.posterUrl}
+            alt=""
+            sizes={sizes}
+            priority={priority}
+            fallbackLabel={movie.title}
+            className="transition-transform duration-300 ease-out group-hover:-translate-y-1 group-hover:brightness-110 group-active:brightness-95"
+          />
+        </div>
 
         <div className="mt-3 space-y-1.5">
           <h3 className="text-ink group-hover:text-accent group-active:text-accent text-sm leading-snug font-semibold transition-colors">
@@ -72,10 +88,17 @@ export function MovieCard({
       </Link>
 
       {movie.contentRating ? (
-        <Badge className="absolute top-2 left-2 border-black/40 bg-black/70 text-white backdrop-blur-sm">
+        <Badge className="absolute bottom-2 left-2 border-black/40 bg-black/70 text-white backdrop-blur-sm">
           {movie.contentRating}
         </Badge>
       ) : null}
+
+      {/*
+        The score goes in the **top-right** corner, opposite the certification
+        badge, so the two never overlap and the number is legible over any
+        artwork. See `RatingBadge` for why the scale is shown as `/10`.
+      */}
+      <RatingBadge rating={rating} scale={movie.ratingScale} className="absolute top-2 right-2" />
     </article>
   );
 }

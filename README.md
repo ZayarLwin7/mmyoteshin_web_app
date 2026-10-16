@@ -126,6 +126,7 @@ Anything prefixed `NEXT_PUBLIC_` is embedded in the browser bundle. **Never** pu
 | `pnpm db:migrate` | Apply pending SQL migrations |
 | `pnpm db:check` | Verify tables, enums, constraints and policies exist |
 | `pnpm db:seed` | Development seed data (guarded) |
+| `pnpm db:seed:series` | Publish five sample public-domain series (idempotent) |
 | `pnpm db:studio` | Drizzle Studio |
 | `pnpm admin:create` | Create an administrator |
 | `pnpm verify` | Format check → lint → typecheck → test → build |

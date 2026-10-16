@@ -1,9 +1,10 @@
 import { LinkButton } from "@/components/ui/button";
-import { formatRating, formatRuntime, formatSeriesLength } from "@/lib/utils";
+import { formatRating, formatRatingScale, formatRuntime, formatSeriesLength } from "@/lib/utils";
 import type { MovieCard as MovieCardData } from "@/db/queries/public";
 
 import { MetaRow } from "./meta-row";
 import { Poster } from "./poster";
+import { RatingBadge } from "./rating-badge";
 
 /**
  * Home hero.
@@ -60,12 +61,19 @@ export function HomeHero({ movie }: { movie: MovieCardData }) {
        * simply narrower on small screens rather than absent.
        */}
       <div className="container-page grid grid-cols-[104px_minmax(0,1fr)] items-start gap-5 py-8 sm:grid-cols-[136px_minmax(0,1fr)] sm:items-center sm:gap-8 sm:py-10 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-12 lg:py-12">
-        <Poster
-          src={movie.posterUrl}
-          alt={`${movie.title} poster`}
-          sizes="(min-width: 1024px) 200px, (min-width: 640px) 136px, 104px"
-          priority
-        />
+        <div className="relative">
+          <Poster
+            src={movie.posterUrl}
+            alt={`${movie.title} poster`}
+            sizes="(min-width: 1024px) 200px, (min-width: 640px) 136px, 104px"
+            priority
+          />
+          <RatingBadge
+            rating={rating}
+            scale={movie.ratingScale}
+            className="absolute top-2 right-2"
+          />
+        </div>
 
         <div className="min-w-0">
           <p className="text-eyebrow mb-3">
@@ -83,7 +91,9 @@ export function HomeHero({ movie }: { movie: MovieCardData }) {
               { key: "length", content: runtime ?? length },
               {
                 key: "rating",
-                content: rating ? `Editorial score ${rating}` : null,
+                content: rating
+                  ? `Editorial score ${rating} / ${formatRatingScale(movie.ratingScale)}`
+                  : null,
                 valueClassName: "text-accent",
               },
               {

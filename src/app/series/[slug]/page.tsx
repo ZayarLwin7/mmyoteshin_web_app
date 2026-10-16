@@ -8,6 +8,7 @@ import { ExternalLinkNotice } from "@/components/site/external-link-notice";
 import { MetaRow } from "@/components/site/meta-row";
 import { MovieRail } from "@/components/site/movie-rail";
 import { Poster } from "@/components/site/poster";
+import { RatingBadge, RatingSummary } from "@/components/site/rating-badge";
 import { ReportForm } from "@/components/site/report-form";
 import { Alert } from "@/components/ui/feedback";
 import {
@@ -17,7 +18,13 @@ import {
 } from "@/db/queries/public";
 import { publicEnv } from "@/lib/env";
 import { toParagraphs } from "@/lib/security/sanitize";
-import { absoluteUrl, formatDate, formatRating, formatSeriesLength } from "@/lib/utils";
+import {
+  absoluteUrl,
+  formatDate,
+  formatRating,
+  formatRatingScale,
+  formatSeriesLength,
+} from "@/lib/utils";
 
 export const revalidate = 300;
 
@@ -203,7 +210,19 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ s
 
           <div className="grid gap-8 lg:grid-cols-[220px_1fr] lg:gap-12">
             <div className="hidden lg:block">
-              <Poster src={movie.posterUrl} alt={`${movie.title} poster`} sizes="220px" priority />
+              <div className="relative">
+                <Poster
+                  src={movie.posterUrl}
+                  alt={`${movie.title} poster`}
+                  sizes="220px"
+                  priority
+                />
+                <RatingBadge
+                  rating={rating}
+                  scale={review?.ratingScale}
+                  className="absolute top-2 right-2"
+                />
+              </div>
             </div>
 
             <div>
@@ -245,15 +264,11 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ s
                 </ul>
               ) : null}
 
-              {rating ? (
-                <p className="mt-6 flex items-center gap-3">
-                  <span className="text-accent text-2xl font-semibold">{rating}</span>
-                  <span className="text-ink-subtle text-xs">
-                    Editorial score
-                    {review?.ratingSource !== "editorial" ? ` (${review?.ratingSource})` : ""}
-                  </span>
-                </p>
-              ) : null}
+              <RatingSummary
+                rating={rating}
+                scale={review?.ratingScale}
+                source={review?.ratingSource}
+              />
 
               <div className="mt-6">
                 <a
@@ -335,12 +350,13 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ s
                   <div className="rounded-panel border-line bg-surface mt-8 border p-5">
                     <p className="text-eyebrow mb-2">Rating methodology</p>
                     <p className="text-ink-muted text-sm">
-                      This is an <strong className="text-ink">editorial score of {rating}</strong>,
-                      awarded by {publicEnv.siteName} on a documented{" "}
-                      {Number.parseInt(review.ratingScale, 10)}-point scale. It reflects the
-                      editorial team&apos;s own assessment and is not an aggregate of user votes or
-                      of any third-party service. Scores are shown with their scale everywhere they
-                      appear, and are never combined with a different rating system.
+                      This is an <strong className="text-ink">editorial score of {rating}</strong>{" "}
+                      out of {formatRatingScale(review.ratingScale)}, awarded by{" "}
+                      {publicEnv.siteName} on a documented{" "}
+                      {Number.parseInt(formatRatingScale(review.ratingScale), 10)}-point scale. It
+                      reflects the editorial team&apos;s own assessment and is not an aggregate of
+                      user votes or of any third-party service. Scores are shown with their scale
+                      everywhere they appear, and are never combined with a different rating system.
                     </p>
                   </div>
                 ) : null}

@@ -23,6 +23,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
     "db:seed:demo": "tsx scripts/seed-demo.ts",
+    "db:seed:series": "tsx scripts/seed-series.ts",
     "db:check": "tsx scripts/check-db.ts",
     "db:studio": "drizzle-kit studio",
     "admin:create": "tsx scripts/create-admin.ts",

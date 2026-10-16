@@ -133,6 +133,30 @@ skip. The E2E lifecycle spec creates and publishes its own film through the admi
 honest way to get published content. `tests/e2e/helpers.ts` exposes `createPublishedFilm()` for
 exactly this, and the link and report specs use it as a fixture.
 
+### `pnpm db:seed:series` — five published sample series
+
+`scripts/seed-series.ts` publishes five genuine public-domain American series (The Cisco Kid, Ramar
+of the Jungle, Highway Patrol, Science Fiction Theatre, Sea Hunt), each with an original synopsis, an
+original review of 1,700–1,900 characters, and a score out of 10. It is how the `/series` section
+gets content for a demo or a local run.
+
+Two deliberate omissions:
+
+- **No download links.** A series may publish with none, and the script refuses to invent an
+  authorization basis — which is the rule the whole product rests on.
+- **`posterUrl: null`.** We hold no artwork we have the right to display, so the cards fall back to
+  the designed title placeholder rather than a hotlinked image.
+
+```bash
+pnpm db:seed:series          # idempotent — safe to re-run
+pnpm db:seed:series -- --remove   # deletes them again, by their `demo-` slug prefix
+```
+
+It is resumable: if a previous run died after creating a draft but before publishing it, the next run
+finishes the job instead of skipping the record. It also closes its database pool on every exit path —
+a script that exits without doing so leaks one idle session pooler backend per failed run, and the
+project only has 15.
+
 ---
 
 ## 4. Running the suite

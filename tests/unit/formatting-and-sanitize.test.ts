@@ -9,6 +9,7 @@ import {
 import {
   formatFileSize,
   formatRating,
+  formatRatingScale,
   formatRuntime,
   formatSeriesLength,
   humaniseEnum,
@@ -202,6 +203,25 @@ describe("formatRating", () => {
     expect(formatRating(null)).toBeNull();
     expect(formatRating("")).toBeNull();
     expect(formatRating(undefined)).toBeNull();
+  });
+});
+
+describe("formatRatingScale", () => {
+  // `rating_scale` is a `numeric(4,1)`, so the driver returns "10.0" for the
+  // default ten-point scale — and a badge reading "/10.0" reads as a decimal.
+  it("drops the trailing zero on a whole scale", () => {
+    expect(formatRatingScale("10.0")).toBe("10");
+    expect(formatRatingScale("5.0")).toBe("5");
+  });
+
+  it("keeps a genuinely fractional scale", () => {
+    expect(formatRatingScale("7.5")).toBe("7.5");
+  });
+
+  it("defaults to ten when there is no scale", () => {
+    expect(formatRatingScale(null)).toBe("10");
+    expect(formatRatingScale(undefined)).toBe("10");
+    expect(formatRatingScale("")).toBe("10");
   });
 });
 
