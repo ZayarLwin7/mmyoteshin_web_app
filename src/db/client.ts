@@ -40,9 +40,29 @@ declare global {
  * Every query this application issues is parameterised, so this halves the
  * database time of every page.
  *
- * If the connection string is ever moved to the transaction pooler, this
- * returns `false` automatically and correctness is preserved at the cost of
- * the extra round trip.
+ * ---------------------------------------------------------------------------
+ * Do not deploy on the transaction pooler
+ * ---------------------------------------------------------------------------
+ * This function exists so that a transaction-pooler URL degrades safely rather
+ * than failing to prepare. It does **not** make that pooler usable.
+ *
+ * `postgres.js` pipelines: it writes queries to the socket without waiting for
+ * each reply, so when more queries are in flight than there are pooled
+ * connections the surplus is pipelined onto a connection that is already busy.
+ * Supavisor's transaction mode cannot route that second in-flight query and
+ * its reply never arrives. The client does not error — it **hangs, permanently**,
+ * and every later query on that instance hangs with it.
+ *
+ * Measured against this project's database, replaying the admin dashboard's
+ * nine concurrent queries: the session pooler answered in 260–680 ms at every
+ * concurrency level tested up to 20; the transaction pooler hung at `max + 1`
+ * (six queries with `max: 5`) and never recovered. `max_pipeline: 1`,
+ * `fetch_types: false` and lowering `max` all failed to avoid it — the cliff
+ * simply moved to the new `max + 1`.
+ *
+ * Keep `DATABASE_URL` on port **5432**. See `docs/deployment.md` §2.1. The only
+ * supported route to the transaction pooler is swapping Drizzle's driver for
+ * `node-postgres`, which queues rather than pipelines.
  */
 function supportsPreparedStatements(url: string): boolean {
   // The transaction pooler is always port 6543; the session pooler and a

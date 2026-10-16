@@ -13,7 +13,7 @@ rollback.
 | Component | Recommendation | Notes |
 | --- | --- | --- |
 | Application | Vercel, or any Node 22 host that runs `next start` | Server actions and `revalidate` need a Node runtime, not a static export |
-| Database | Supabase Postgres 17 | **Which pooler depends on the host** — see §2.1. A long-lived Node host uses the session pooler; serverless uses the transaction pooler. |
+| Database | Supabase Postgres 17 | **Session-mode pooler, port 5432, on every host** — including serverless. See §2.1 for why the transaction pooler cannot be used. |
 | DNS / TLS | Managed by the host | HTTPS is mandatory: the session cookie is `Secure` in production |
 
 Two environments, two **separate** Supabase projects. Never point staging at the production database
@@ -26,18 +26,39 @@ Two environments, two **separate** Supabase projects. Never point staging at the
 ### 2.1 Provision the database
 
 1. Create a Supabase project.
-2. From **Project Settings → Database**, copy a **pooler** connection string. Which one depends on
-   where the app runs:
-   - **Long-lived Node host** (`next start`, a VM, a container) → session-mode pooler, port **5432**.
-     One process, a small pool, prepared statements work. This is the fastest option.
-   - **Serverless** (Vercel, Netlify functions) → transaction-mode pooler, port **6543**. The app
-     auto-detects the port and switches `prepare` off, so **correctness is preserved**; the cost is a
-     second round trip per parameterised query, which halves database speed. That trade is
-     mandatory: a session-mode pooler pins one server connection per client for its lifetime, so
-     every concurrent serverless instance holds one and the project's client budget is exhausted
-     within minutes of real traffic.
+2. From **Project Settings → Database**, copy the **session-mode pooler** connection string, port
+   **5432**. Use it on **every** host, serverless included.
 
-   The direct connection string is not suitable for either — no pooling.
+   > **Do not use the transaction pooler (6543).** It is not merely slower here — it is unusable.
+   >
+   > `postgres.js` writes queries to its socket without waiting for each reply (pipelining). When
+   > more queries are in flight than there are pooled connections, it pipelines the surplus onto a
+   > connection that is already busy. Supavisor's **transaction** mode multiplexes many clients onto
+   > one server connection and cannot route that second in-flight query, so its reply never arrives.
+   >
+   > The result is not an error — it is a **permanent hang**. Measured against this project's
+   > database, replaying the admin dashboard's query load:
+   >
+   > | Pooler | 1–5 concurrent | 6 concurrent | 8 concurrent |
+   > | --- | --- | --- | --- |
+   > | Session (5432) | 250–280 ms | 268 ms | 260 ms |
+   > | Transaction (6543) | 2 200 ms | **hangs** | **hangs** |
+   >
+   > The cliff sits at exactly `max + 1` pooled connections, and once crossed the client is
+   > **poisoned**: every subsequent query on that instance hangs, including single queries that
+   > worked moments earlier. That is why `/admin` (nine concurrent queries) hangs forever on Vercel
+   > while `/admin/settings` (few queries) answers normally — and why the instance never recovers.
+   >
+   > No client option avoids it. `max_pipeline: 1`, `fetch_types: false`, `prepare: false` and
+   > lowering `max` were each tested; the cliff moves to `max + 1` and stays. The session pooler
+   > handled **20 concurrent** queries with no cliff, and was ~10× faster, because prepared
+   > statements work there too.
+   >
+   > If the transaction pooler is ever required, the fix is a different driver: Drizzle's
+   > `node-postgres` adapter queues instead of pipelining. That is a driver swap, not a config change.
+
+   The direct connection string is not suitable either — it resolves over IPv6 only, and there is no
+   pooling.
 3. Keep the password in the host's secret store, not in the repository.
 
 ### 2.2 Configure environment variables
@@ -150,7 +171,7 @@ Set these under **Project → Settings → Environment Variables**, for the **Pr
 
 | Variable | Value | Notes |
 | --- | --- | --- |
-| `DATABASE_URL` | transaction pooler, port **6543** | Mandatory on serverless — see §2.1 |
+| `DATABASE_URL` | session pooler, port **5432** | **Not** the transaction pooler — see §2.1 |
 | `SESSION_SECRET` | 48 random bytes | `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` |
 | `NEXT_PUBLIC_SITE_URL` | `https://<your-domain>` | **Must be set before the first build.** Canonicals, OG URLs and the sitemap derive from it, and it is inlined into the browser bundle. |
 | `NEXT_PUBLIC_SITE_NAME` | `MM YoteShin` | |
@@ -175,9 +196,9 @@ Vercel does not run `pnpm db:migrate` as part of a build. Run both against the *
 `DATABASE_URL` from your machine, before the first deploy that serves traffic:
 
 ```bash
-DATABASE_URL="postgresql://…:6543/postgres" pnpm db:migrate
-DATABASE_URL="postgresql://…:6543/postgres" pnpm db:check
-DATABASE_URL="postgresql://…:6543/postgres" pnpm admin:create
+DATABASE_URL="postgresql://…:5432/postgres" pnpm db:migrate
+DATABASE_URL="postgresql://…:5432/postgres" pnpm db:check
+DATABASE_URL="postgresql://…:5432/postgres" pnpm admin:create
 ```
 
 `pnpm build` connects to the database to prerender the catalogue, so a database that has not been
@@ -207,8 +228,13 @@ curl -fsSI https://<origin>/admin | grep -i x-robots-tag
 
 ### 3.6 Vercel-specific caveats
 
-- **Connection budget.** Watch Supabase's connection count in the first hour. With the session
-  pooler on serverless it climbs monotonically; with the transaction pooler it plateaus.
+- **Connection budget.** Watch Supabase's connection count in the first hour. The session pooler
+  holds one server connection per pooled client for that client's lifetime, so the ceiling is
+  `max` × concurrent instances. With `max: 5` that is five connections per warm instance; a pool
+  only opens what it needs, so a mostly-cached public site typically holds one or two. If the count
+  approaches the project's limit, lower `max` in `src/db/client.ts` before raising anything else.
+- **Admin pages issue many concurrent queries.** The dashboard fires nine at once. That is fine on
+  the session pooler and fatal on the transaction pooler — see §2.1.
 - **Cold starts pay the TLS handshake.** A fresh serverless instance pays ~2.2 s to open its first
   Postgres connection. `idle_timeout: 300` in `src/db/client.ts` keeps warm instances from paying it
   twice, but a cold instance will.
