@@ -56,7 +56,7 @@ export function MovieRail({
         aria-label={`${title} — scrollable list`}
       >
         {movies.map((movie) => (
-          <div key={movie.id} className="w-[150px] sm:w-[180px] lg:w-[200px]">
+          <div key={movie.id} className="w-full sm:w-[150px] md:w-[180px] lg:w-[200px]">
             {/*
               No `priority` on rail posters. Every rail sits below the hero, so
               none of them is the LCP candidate — but `priority` emits a

@@ -1,5 +1,7 @@
+import Link from "next/link";
+
 import { EmptyState } from "@/components/ui/feedback";
-import { LinkButton } from "@/components/ui/button";
+import { Button, LinkButton } from "@/components/ui/button";
 import type { CataloguePage, GenreWithCount } from "@/db/queries/public";
 import type { CatalogueQuery } from "@/lib/validation/schemas";
 
@@ -16,6 +18,13 @@ import { Pagination } from "./pagination";
  * filtered view has a shareable and canonical URL, and there is no client-side
  * state to get out of sync with the URL.
  */
+
+/** Sort option keys, with the label used both in the select and in filter chips. */
+const SORT_LABELS: Record<string, string> = {
+  newest: "Recently published",
+  title: "Title A–Z",
+  year: "Release year",
+};
 
 type CatalogueViewProps = {
   heading: string;
@@ -48,28 +57,70 @@ export function CatalogueView({
 }: CatalogueViewProps) {
   const locked = new Set(lockedFilterKeys);
 
-  /** Build a URL for a given page, preserving every active filter. */
-  function buildHref(page: number) {
+  /**
+   * Build a URL for a given page, preserving every active filter.
+   *
+   * `omit` drops specific filters so a chip can remove *only itself*. The
+   * previous version gave every chip `basePath` as its href, which cleared the
+   * whole filter set — clicking the "1941" chip silently discarded the genre
+   * too. Chips now remove exactly the filter they name.
+   */
+  function buildHref(page = 1, omit: (keyof CatalogueQuery)[] = []) {
+    const drop = new Set(omit);
     const params = new URLSearchParams();
-    if (filters.q) params.set("q", filters.q);
-    if (filters.genre && !locked.has("genre")) params.set("genre", filters.genre);
-    if (filters.year && !locked.has("year")) params.set("year", String(filters.year));
-    if (filters.language) params.set("language", filters.language);
-    if (filters.rating) params.set("rating", filters.rating);
-    if (filters.sort && filters.sort !== "newest") params.set("sort", filters.sort);
-    if (page > 1) params.set("page", String(page));
+    if (filters.q && !drop.has("q")) params.set("q", filters.q);
+    if (filters.genre && !locked.has("genre") && !drop.has("genre")) {
+      params.set("genre", filters.genre);
+    }
+    if (filters.year && !locked.has("year") && !drop.has("year")) {
+      params.set("year", String(filters.year));
+    }
+    if (filters.language && !drop.has("language")) params.set("language", filters.language);
+    if (filters.rating && !drop.has("rating")) params.set("rating", filters.rating);
+    if (filters.sort && filters.sort !== "newest" && !drop.has("sort")) {
+      params.set("sort", filters.sort);
+    }
+    if (page > 1 && !drop.has("page")) params.set("page", String(page));
     const query = params.toString();
     return query ? `${basePath}?${query}` : basePath;
   }
 
-  const activeFilters: { label: string; href: string }[] = [];
-  if (filters.q) activeFilters.push({ label: `“${filters.q}”`, href: basePath });
+  /** Chips for every filter the visitor can actually remove from here. */
+  const activeFilters: { key: keyof CatalogueQuery; label: string; href: string }[] = [];
+  if (filters.q) {
+    activeFilters.push({ key: "q", label: `“${filters.q}”`, href: buildHref(1, ["q"]) });
+  }
   if (filters.genre && !locked.has("genre")) {
     const match = genres.find((genre) => genre.slug === filters.genre);
-    activeFilters.push({ label: match?.name ?? filters.genre, href: basePath });
+    activeFilters.push({
+      key: "genre",
+      label: match?.name ?? filters.genre,
+      href: buildHref(1, ["genre"]),
+    });
   }
   if (filters.year && !locked.has("year")) {
-    activeFilters.push({ label: String(filters.year), href: basePath });
+    activeFilters.push({
+      key: "year",
+      label: String(filters.year),
+      href: buildHref(1, ["year"]),
+    });
+  }
+  if (filters.language) {
+    activeFilters.push({
+      key: "language",
+      label: filters.language,
+      href: buildHref(1, ["language"]),
+    });
+  }
+  if (filters.rating) {
+    activeFilters.push({ key: "rating", label: filters.rating, href: buildHref(1, ["rating"]) });
+  }
+  if (filters.sort && filters.sort !== "newest") {
+    activeFilters.push({
+      key: "sort",
+      label: SORT_LABELS[filters.sort] ?? filters.sort,
+      href: buildHref(1, ["sort"]),
+    });
   }
 
   return (
@@ -159,31 +210,51 @@ export function CatalogueView({
               defaultValue={filters.sort}
               className="border-line-strong bg-surface-sunken text-ink h-10 rounded-lg border px-3 text-sm"
             >
-              <option value="newest">Recently published</option>
-              <option value="title">Title A–Z</option>
-              <option value="year">Release year</option>
+              {Object.entries(SORT_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            className="bg-accent text-accent-ink hover:bg-accent-strong h-10 rounded-full px-5 text-sm font-medium transition-colors"
-          >
-            Apply filters
-          </button>
-          <LinkButton href={basePath} variant="secondary" size="md">
-            Clear all
-          </LinkButton>
+          <Button type="submit">Apply filters</Button>
+
+          {/*
+            Only offered when there is something to clear.
+
+            On a locked-filter route (`/genres/[slug]`, `/years/[year]`) with no
+            other filters active, the href was the current URL — so clicking it
+            changed nothing and the control read as broken. It now appears only
+            when at least one removable filter is set.
+          */}
+          {activeFilters.length > 0 ? (
+            <LinkButton href={basePath} variant="secondary" size="md">
+              Clear all
+            </LinkButton>
+          ) : null}
 
           {activeFilters.length > 0 ? (
             <ul className="flex flex-wrap gap-2">
               {activeFilters.map((filter) => (
-                <li key={filter.label}>
-                  <span className="border-accent-dim bg-accent/10 text-accent rounded-full border px-3 py-1 text-xs">
+                <li key={filter.key}>
+                  {/*
+                    Each chip removes only its own filter, preserving the rest.
+                    The close glyph is decorative; the accessible name carries
+                    the action so a screen reader announces what will happen.
+                  */}
+                  <Link
+                    href={filter.href}
+                    className="border-accent-dim bg-accent/10 text-accent hover:border-accent hover:bg-accent/20 active:bg-accent/25 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition duration-150 active:scale-[0.98]"
+                  >
                     {filter.label}
-                  </span>
+                    <span aria-hidden="true" className="text-accent/70">
+                      ×
+                    </span>
+                    <span className="sr-only">— remove this filter</span>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -196,14 +267,14 @@ export function CatalogueView({
         <EmptyState title={emptyTitle} description={emptyDescription} />
       ) : (
         <>
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          <ul className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-4 sm:gap-y-8 lg:grid-cols-4 xl:grid-cols-6">
             {result.items.map((movie, index) => (
               <li key={movie.id}>
                 {/*
                   Only the first card is the LCP candidate: text has no network
                   cost, so the first poster is the largest imageful paint on this
-                  page. On a two-column phone grid the previous
-                  `index < 6` preloaded three rows' worth of posters, most of
+                  page. On a three-column phone grid the previous
+                  `index < 6` preloaded two rows' worth of posters, most of
                   them below the fold, and each preload competes with the LCP
                   image for bandwidth (spec §13: prioritize only the true hero
                   image).

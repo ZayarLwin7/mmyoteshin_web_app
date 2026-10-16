@@ -58,7 +58,7 @@ export function SiteHeader({ siteName }: { siteName: string }) {
       <div className="container-page flex h-16 items-center gap-4">
         <Link
           href="/"
-          className="text-ink hover:text-accent text-lg font-semibold tracking-tight transition-colors"
+          className="text-ink hover:text-accent active:text-accent text-lg font-semibold tracking-tight transition-colors"
           style={{ fontFamily: "var(--font-display)" }}
         >
           {siteName}
@@ -72,10 +72,10 @@ export function SiteHeader({ siteName }: { siteName: string }) {
                   href={link.href}
                   aria-current={isActive(link.href) ? "page" : undefined}
                   className={cn(
-                    "rounded-full px-3 py-2 text-sm transition-colors",
+                    "rounded-full px-3 py-2 text-sm transition-colors active:scale-[0.98]",
                     isActive(link.href)
-                      ? "text-accent"
-                      : "text-ink-muted hover:bg-surface-raised hover:text-ink",
+                      ? "bg-accent/15 text-accent"
+                      : "text-ink-muted hover:bg-surface-raised hover:text-ink active:bg-accent/15 active:text-accent",
                   )}
                 >
                   {link.label}
@@ -106,7 +106,7 @@ export function SiteHeader({ siteName }: { siteName: string }) {
             onClick={() => setMenuOpenFor(menuOpen ? null : pathname)}
             aria-expanded={menuOpen}
             aria-controls={menuId}
-            className="border-line-strong text-ink-muted hover:text-ink inline-flex size-9 items-center justify-center rounded-full border transition-colors md:hidden"
+            className="border-line-strong text-ink-muted hover:text-ink active:border-accent active:bg-accent/15 active:text-accent inline-flex size-9 items-center justify-center rounded-full border transition-colors active:scale-[0.98] md:hidden"
           >
             <span className="sr-only">{menuOpen ? "Close menu" : "Open menu"}</span>
             <svg viewBox="0 0 24 24" className="size-5" fill="none" aria-hidden="true">
@@ -139,8 +139,10 @@ export function SiteHeader({ siteName }: { siteName: string }) {
                   href={link.href}
                   aria-current={isActive(link.href) ? "page" : undefined}
                   className={cn(
-                    "block rounded-lg px-2 py-3 text-base transition-colors",
-                    isActive(link.href) ? "text-accent" : "text-ink-muted hover:text-ink",
+                    "block rounded-lg px-2 py-3 text-base transition-colors active:scale-[0.98]",
+                    isActive(link.href)
+                      ? "bg-accent/15 text-accent font-medium"
+                      : "text-ink-muted hover:bg-surface-raised hover:text-ink active:bg-accent/15 active:text-accent",
                   )}
                 >
                   {link.label}

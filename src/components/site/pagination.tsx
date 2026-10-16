@@ -30,7 +30,13 @@ export function Pagination({
   for (let index = first; index <= last; index += 1) pages.push(index);
 
   const linkClasses =
-    "inline-flex h-9 min-w-9 items-center justify-center rounded-full border px-3 text-sm transition-colors";
+    "inline-flex h-9 min-w-9 items-center justify-center rounded-full border px-3 text-sm " +
+    "transition-colors duration-150 active:scale-[0.98]";
+
+  /** Every page link that is not the current one. */
+  const idleClasses =
+    "border-line-strong text-ink-muted hover:border-accent hover:text-accent " +
+    "active:border-accent active:bg-accent/15 active:text-accent";
 
   return (
     <nav
@@ -38,14 +44,7 @@ export function Pagination({
       className={cn("flex items-center justify-center gap-1.5", className)}
     >
       {page > 1 ? (
-        <Link
-          href={buildHref(page - 1)}
-          rel="prev"
-          className={cn(
-            linkClasses,
-            "border-line-strong text-ink-muted hover:border-accent hover:text-accent",
-          )}
-        >
+        <Link href={buildHref(page - 1)} rel="prev" className={cn(linkClasses, idleClasses)}>
           Previous
         </Link>
       ) : (
@@ -59,13 +58,7 @@ export function Pagination({
 
       {first > 1 ? (
         <>
-          <Link
-            href={buildHref(1)}
-            className={cn(
-              linkClasses,
-              "border-line-strong text-ink-muted hover:border-accent hover:text-accent",
-            )}
-          >
+          <Link href={buildHref(1)} className={cn(linkClasses, idleClasses)}>
             1
           </Link>
           {first > 2 ? <span className="text-ink-subtle px-1">…</span> : null}
@@ -80,7 +73,7 @@ export function Pagination({
           className={cn(
             linkClasses,
             pageNumber === page
-              ? "border-accent bg-accent text-accent-ink"
+              ? "border-accent bg-accent text-accent-ink active:brightness-90"
               : "border-line-strong text-ink-muted hover:border-accent hover:text-accent",
           )}
         >
@@ -92,27 +85,14 @@ export function Pagination({
       {last < totalPages ? (
         <>
           {last < totalPages - 1 ? <span className="text-ink-subtle px-1">…</span> : null}
-          <Link
-            href={buildHref(totalPages)}
-            className={cn(
-              linkClasses,
-              "border-line-strong text-ink-muted hover:border-accent hover:text-accent",
-            )}
-          >
+          <Link href={buildHref(totalPages)} className={cn(linkClasses, idleClasses)}>
             {totalPages}
           </Link>
         </>
       ) : null}
 
       {page < totalPages ? (
-        <Link
-          href={buildHref(page + 1)}
-          rel="next"
-          className={cn(
-            linkClasses,
-            "border-line-strong text-ink-muted hover:border-accent hover:text-accent",
-          )}
-        >
+        <Link href={buildHref(page + 1)} rel="next" className={cn(linkClasses, idleClasses)}>
           Next
         </Link>
       ) : (

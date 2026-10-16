@@ -88,7 +88,7 @@ export function AdminShell({
 
       <div className="container-page flex flex-col gap-8 py-8 lg:flex-row">
         <nav aria-label="Admin sections" className="lg:w-52 lg:shrink-0">
-          <ul className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+          <ul className="flex flex-wrap gap-1 lg:flex-col lg:flex-nowrap lg:overflow-visible">
             {visibleItems.map((item) => {
               const badge = badgeFor(item.href);
               return (

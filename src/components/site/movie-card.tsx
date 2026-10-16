@@ -30,7 +30,7 @@ export function MovieCard({
     <article className="group relative">
       <Link
         href={`/movies/${movie.slug}`}
-        className="rounded-card focus-visible:outline-accent block focus-visible:outline-2 focus-visible:outline-offset-4"
+        className="rounded-card focus-visible:outline-accent block transition-transform duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-4 active:scale-[0.98]"
       >
         <Poster
           src={movie.posterUrl}
@@ -42,7 +42,7 @@ export function MovieCard({
         />
 
         <div className="mt-3 space-y-1.5">
-          <h3 className="text-ink group-hover:text-accent text-sm leading-snug font-semibold transition-colors">
+          <h3 className="text-ink group-hover:text-accent group-active:text-accent text-sm leading-snug font-semibold transition-colors">
             {movie.title}
           </h3>
 
@@ -90,7 +90,7 @@ export function MovieCardSkeleton() {
 /** Grid of skeletons used by `loading.tsx` files. */
 export function MovieGridSkeleton({ count = 12 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+    <div className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-4 sm:gap-y-8 lg:grid-cols-4 xl:grid-cols-6">
       {Array.from({ length: count }, (_, index) => (
         <MovieCardSkeleton key={index} />
       ))}

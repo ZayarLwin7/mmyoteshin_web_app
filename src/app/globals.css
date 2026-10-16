@@ -202,30 +202,47 @@
    ========================================================================== */
 
 .rail {
-  display: flex;
-  gap: 1rem;
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
   /*
-   * Keep the gutter inside the snapport.
+   * Mobile: a three-column grid, not a scroller.
    *
-   * This container is both a scrollport and a padded flex container. Without
-   * `scroll-padding`, the browser aligns a child's `scroll-snap-align: start`
-   * edge with the *padding box*, so it scrolls the rail by exactly the gutter
-   * on load (measured: `scrollLeft: 20` at rest). That cancels the left padding
-   * — the first card ends up flush against the container edge, 20px out of line
-   * with the section heading above it — and every subsequent snap lands the
-   * same way as you scroll.
-   *
-   * Setting `scroll-padding-inline` to the gutter moves the snapport start to
-   * the content box, so the first card rests at `scrollLeft: 0` and every card
-   * snaps flush with the heading.
+   * This used to be `overflow-x: auto` at every width, so on a phone each
+   * home-page section scrolled sideways — the only visible affordance was a
+   * scrollbar that `.rail` itself hides, so the row simply appeared to be cut
+   * off. Three columns show the whole row without any gesture, and cards stay
+   * large enough to read.
    */
-  scroll-padding-inline: var(--spacing-gutter);
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
   /* Leave room for focus rings without clipping them. */
   padding-block: 0.5rem;
+}
+
+/*
+ * From `sm` up there is room to overflow, so the collection becomes a native
+ * horizontal scroller: it works with trackpads, keyboard arrows, touch
+ * gestures and screen readers with no JavaScript.
+ *
+ * `scroll-padding-inline` keeps the gutter inside the snapport. This container
+ * is both a scrollport and a padded flex container; without it the browser
+ * aligns a child's `scroll-snap-align: start` edge with the *padding box*, so
+ * it scrolls the rail by exactly the gutter on load (measured: `scrollLeft: 20`
+ * at rest). That cancels the left padding — the first card ends up flush
+ * against the container edge, out of line with the section heading above it —
+ * and every subsequent snap lands the same way. Setting it to the gutter moves
+ * the snapport start to the content box, so the first card rests at
+ * `scrollLeft: 0` and every card snaps flush with the heading.
+ */
+@media (min-width: 640px) {
+  .rail {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--spacing-gutter);
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .rail::-webkit-scrollbar {
