@@ -147,12 +147,21 @@ export default async function AdminMoviesPage({
                 {result.items.map((movie) => (
                   <tr key={movie.id} className="align-top">
                     <td className="px-4 py-3">
-                      <Link
-                        href={`/admin/movies/${movie.id}`}
-                        className="text-ink hover:text-accent font-medium"
-                      >
-                        {movie.title}
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          href={`/admin/movies/${movie.id}`}
+                          className="text-ink hover:text-accent font-medium"
+                        >
+                          {movie.title}
+                        </Link>
+                        {/*
+                          A series is a different section of the site, not just a
+                          longer film, so the list says which one this record is.
+                        */}
+                        {movie.contentKind === "series" ? (
+                          <Badge tone="accent">Series</Badge>
+                        ) : null}
+                      </div>
                       <p className="text-ink-subtle mt-0.5 font-mono text-xs">/{movie.slug}</p>
                     </td>
                     <td className="px-4 py-3">

@@ -141,7 +141,18 @@ export const adminUserCreateSchema = z.object({
 
 export const movieStatusSchema = z.enum(["draft", "published", "archived"]);
 
-export const movieInputSchema = z.object({
+/**
+ * Whether the record is a film or a series.
+ *
+ * The two are separate sections of the site with separate detail routes and
+ * separate "related" rails, so the kind is a real part of the record rather
+ * than a display flag. Existing rows are films: the migration adds the column
+ * with `NOT NULL DEFAULT 'movie'`, and this schema keeps the same default so a
+ * form post that omits the field does not silently create a series.
+ */
+export const contentKindSchema = z.enum(["movie", "series"]).default("movie");
+
+const baseMovieInputSchema = z.object({
   title: z.string().trim().min(1, "Title is required.").max(300),
   /**
    * Blank or absent both mean "derive the slug from the name", and both
@@ -158,6 +169,11 @@ export const movieInputSchema = z.object({
   releaseYear: optionalInt(1888, 2200),
   releaseDate: isoDate,
   runtimeMinutes: optionalInt(1, 1440),
+  contentKind: contentKindSchema,
+  /** Series only. A series cannot be published without a season count. */
+  seasonCount: optionalInt(1, 200),
+  /** Series only; the total across all seasons. */
+  episodeCount: optionalInt(1, 5000),
   synopsis: optionalText(8000),
   editorialNote: optionalText(8000),
   posterUrl: optionalImageSource,
@@ -172,6 +188,44 @@ export const movieInputSchema = z.object({
   curationWeight: optionalInt(-1000, 1000),
   status: movieStatusSchema.default("draft"),
   genreIds: z.array(uuidSchema).max(20).default([]),
+});
+
+/**
+ * The kind and the counts have to agree.
+ *
+ * The database enforces the same shape with CHECK constraints
+ * (`series_requires_seasons`, `movie_has_no_seasons`), so without this a
+ * mismatched form post would be rejected by Postgres as a raw driver error
+ * instead of a field error an editor can act on. `superRefine` keeps both the
+ * input and the output type of the object, so `MovieInput` below is unchanged.
+ */
+export const movieInputSchema = baseMovieInputSchema.superRefine((data, ctx) => {
+  if (data.contentKind === "series") {
+    if (data.seasonCount === null) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["seasonCount"],
+        message: "A series needs a season count.",
+      });
+    }
+    return;
+  }
+
+  if (data.seasonCount !== null) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["seasonCount"],
+      message: "Season count only applies to a series. Switch the type to Series first.",
+    });
+  }
+
+  if (data.episodeCount !== null) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["episodeCount"],
+      message: "Episode count only applies to a series. Switch the type to Series first.",
+    });
+  }
 });
 
 export type MovieInput = z.infer<typeof movieInputSchema>;

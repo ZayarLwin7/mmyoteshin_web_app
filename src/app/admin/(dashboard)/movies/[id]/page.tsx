@@ -34,7 +34,14 @@ import { roleHasPermission } from "@/lib/auth/permissions";
 import { getPublicationReadiness } from "@/lib/services/movies";
 import { formatDate, formatFileSize, humaniseEnum } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Edit film" };
+import type { Movie } from "@/db/schema";
+
+export const metadata: Metadata = { title: "Edit record" };
+
+/** The public URL of a record, following its own content kind. */
+function publicUrl(movie: { slug: string; contentKind: Movie["contentKind"] }): string {
+  return movie.contentKind === "series" ? `/series/${movie.slug}` : `/movies/${movie.slug}`;
+}
 
 /**
  * The editorial workspace for a single film.
@@ -73,6 +80,9 @@ export default async function AdminMovieDetailPage({
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={statusTone(movie.status)}>{humaniseEnum(movie.status)}</Badge>
           {movie.featured ? <Badge tone="accent">Featured</Badge> : null}
+          <Badge tone={movie.contentKind === "series" ? "accent" : "neutral"}>
+            {humaniseEnum(movie.contentKind)}
+          </Badge>
           {movie.publishedAt ? (
             <span className="text-ink-subtle text-xs">
               Published {formatDate(movie.publishedAt)}
@@ -84,13 +94,18 @@ export default async function AdminMovieDetailPage({
           <h1 className="text-heading text-ink font-semibold">{movie.title}</h1>
 
           <div className="flex flex-wrap gap-2">
+            {/*
+              The public URL follows the record's kind. A series lives at
+              `/series/<slug>` and answers 404 under `/movies/<slug>`, so a
+              hard-coded film path here would send an editor to a dead page.
+            */}
             {movie.status === "published" ? (
-              <LinkButton href={`/movies/${movie.slug}`} variant="secondary" size="sm">
+              <LinkButton href={publicUrl(movie)} variant="secondary" size="sm">
                 View public page
               </LinkButton>
             ) : (
               <LinkButton
-                href={`/movies/${movie.slug}`}
+                href={publicUrl(movie)}
                 variant="ghost"
                 size="sm"
                 // A draft has no public page; the preview goes through the admin

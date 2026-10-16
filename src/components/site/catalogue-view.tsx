@@ -38,6 +38,8 @@ type CatalogueViewProps = {
   basePath: string;
   /** Filters that are fixed by the route and should not be editable here. */
   lockedFilterKeys?: (keyof CatalogueQuery)[];
+  /** Singular noun for the result count, e.g. "film" or "series". */
+  itemNoun?: string;
   emptyTitle?: string;
   emptyDescription?: string;
 };
@@ -52,6 +54,7 @@ export function CatalogueView({
   years,
   basePath,
   lockedFilterKeys = [],
+  itemNoun = "film",
   emptyTitle = "No films match those filters",
   emptyDescription = "Try removing a filter or searching for a different title.",
 }: CatalogueViewProps) {
@@ -123,6 +126,12 @@ export function CatalogueView({
     });
   }
 
+  /**
+   * "series" is already plural, so it does not take a second `s`. Every other
+   * noun this component is given ("film") is a normal count noun.
+   */
+  const plural = itemNoun.endsWith("s") ? itemNoun : `${itemNoun}s`;
+
   return (
     <div className="container-page py-10">
       <header className="mb-8 max-w-3xl">
@@ -131,8 +140,8 @@ export function CatalogueView({
         {description ? <p className="text-ink-muted mt-3 text-sm">{description}</p> : null}
         <p className="text-ink-subtle mt-3 text-sm" role="status">
           {result.total === 0
-            ? "No films found"
-            : `${result.total} film${result.total === 1 ? "" : "s"}`}
+            ? `No ${plural} found`
+            : `${result.total} ${result.total === 1 ? itemNoun : plural}`}
           {result.totalPages > 1 ? ` · page ${result.page} of ${result.totalPages}` : ""}
         </p>
       </header>

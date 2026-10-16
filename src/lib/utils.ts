@@ -63,6 +63,28 @@ export function formatRuntime(minutes: number | null | undefined): string | null
   return `${hours}h ${remainder}m`;
 }
 
+/**
+ * One line describing how long a series is, e.g. `3 seasons · 24 episodes`.
+ *
+ * Whichever count is present is shown on its own — a series is publishable
+ * with an episode count still to be confirmed (it is a warning, not a
+ * blocker), so this must not silently return `null` for "has seasons, no
+ * episode total".
+ */
+export function formatSeriesLength(
+  seasonCount: number | null | undefined,
+  episodeCount: number | null | undefined,
+): string | null {
+  const seasons =
+    seasonCount && seasonCount > 0 ? `${seasonCount} season${seasonCount === 1 ? "" : "s"}` : null;
+  const episodes =
+    episodeCount && episodeCount > 0
+      ? `${episodeCount} episode${episodeCount === 1 ? "" : "s"}`
+      : null;
+  if (seasons && episodes) return `${seasons} · ${episodes}`;
+  return seasons ?? episodes ?? null;
+}
+
 export function formatFileSize(bytes: string | number | null | undefined): string | null {
   if (bytes === null || bytes === undefined || bytes === "") return null;
   const value = typeof bytes === "string" ? Number.parseInt(bytes, 10) : bytes;

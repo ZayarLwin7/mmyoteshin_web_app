@@ -127,6 +127,8 @@ export type AdminMovieListItem = {
   updatedAt: Date;
   genreCount: number;
   activeLinkCount: number;
+  /** Drives the Series badge in the admin list. */
+  contentKind: Movie["contentKind"];
 };
 
 export async function listAdminMovies(options: {
@@ -166,6 +168,7 @@ export async function listAdminMovies(options: {
         featured: movies.featured,
         publishedAt: movies.publishedAt,
         updatedAt: movies.updatedAt,
+        contentKind: movies.contentKind,
         genreCount: sql<number>`(select count(*)::int from ${movieGenres} where ${movieGenres.movieId} = ${movies.id})`,
         activeLinkCount: sql<number>`(select count(*)::int from ${downloadLinks} where ${downloadLinks.movieId} = ${movies.id} and ${downloadLinks.status} = 'active')`,
       })

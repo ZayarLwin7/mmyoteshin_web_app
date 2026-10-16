@@ -6,7 +6,14 @@ import {
   sanitizeRichText,
   toParagraphs,
 } from "@/lib/security/sanitize";
-import { formatFileSize, formatRating, formatRuntime, humaniseEnum, truncate } from "@/lib/utils";
+import {
+  formatFileSize,
+  formatRating,
+  formatRuntime,
+  formatSeriesLength,
+  humaniseEnum,
+  truncate,
+} from "@/lib/utils";
 
 describe("sanitizeRichText", () => {
   it("removes script tags and their contents", () => {
@@ -132,6 +139,30 @@ describe("formatRuntime", () => {
     expect(formatRuntime(0)).toBeNull();
     expect(formatRuntime(-5)).toBeNull();
     expect(formatRuntime(undefined)).toBeNull();
+  });
+});
+
+describe("formatSeriesLength", () => {
+  it.each([
+    [3, 24, "3 seasons · 24 episodes"],
+    [1, 8, "1 season · 8 episodes"],
+    [1, 1, "1 season · 1 episode"],
+  ])("formats %i seasons and %i episodes as %s", (seasons, episodes, expected) => {
+    expect(formatSeriesLength(seasons, episodes)).toBe(expected);
+  });
+
+  it("shows whichever count is present on its own", () => {
+    // A series is publishable with no episode total yet — it is a warning, not
+    // a blocker — so a half-known series must still render a usable line.
+    expect(formatSeriesLength(3, null)).toBe("3 seasons");
+    expect(formatSeriesLength(1, null)).toBe("1 season");
+    expect(formatSeriesLength(null, 24)).toBe("24 episodes");
+  });
+
+  it("returns null when neither count is usable", () => {
+    expect(formatSeriesLength(null, null)).toBeNull();
+    expect(formatSeriesLength(0, 0)).toBeNull();
+    expect(formatSeriesLength(undefined, undefined)).toBeNull();
   });
 });
 

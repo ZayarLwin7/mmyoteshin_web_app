@@ -104,9 +104,18 @@ The schema refuses inconsistent rows outright:
 - `download_links_active_requires_authorization` — an active link must have an authorization basis.
 - `download_links_destination_https` — every destination must be `https`.
 - `movies_published_requires_timestamp` — a published film must have a publication timestamp.
+- `movies_series_requires_seasons` — a series must carry a season count.
+- `movies_has_no_seasons_when_movie` — a film must not carry a season or episode count.
+- `movies_season_count_positive` / `movies_episode_count_positive` — the counts, when set, are ≥ 1.
 - `reviews_published_requires_timestamp` — same for reviews.
 - `admin_users_email_lowercase` — admin emails are stored lowercase.
 - A partial unique index allows only one **published** review per film.
+
+The series shape is enforced in three places, in this order of convenience: the Zod schema
+(`movieInputSchema`) returns a field error, `evaluatePublicationReadiness` blocks publication with
+`series_seasons_missing`, and the CHECK constraints refuse the row outright. The schema check exists
+so an editor gets an actionable message; the CHECK exists so that even a direct SQL write cannot
+create a series with no seasons.
 
 ### The private evidence field
 

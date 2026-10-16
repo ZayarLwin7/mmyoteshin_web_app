@@ -592,6 +592,12 @@ async function main() {
         originalTitle: film.originalTitle,
         releaseYear: film.releaseYear,
         releaseDate: null,
+        // The demo catalogue is films only. Series have to earn a published
+        // review and a season count through the admin UI like everything else,
+        // and nothing here invents an authorization basis.
+        contentKind: "movie",
+        seasonCount: null,
+        episodeCount: null,
         runtimeMinutes: film.runtimeMinutes,
         synopsis: film.synopsis,
         editorialNote: null,

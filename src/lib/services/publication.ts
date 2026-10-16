@@ -53,7 +53,16 @@ export type ReadinessLink = {
 export type ReadinessInput = {
   movie: Pick<
     Movie,
-    "title" | "slug" | "synopsis" | "releaseYear" | "posterUrl" | "metaTitle" | "metaDescription"
+    | "title"
+    | "slug"
+    | "synopsis"
+    | "releaseYear"
+    | "posterUrl"
+    | "metaTitle"
+    | "metaDescription"
+    | "contentKind"
+    | "seasonCount"
+    | "episodeCount"
   >;
   genreIds: string[];
   reviews: Pick<Review, "status" | "body">[];
@@ -108,6 +117,26 @@ export function evaluatePublicationReadiness(input: ReadinessInput): Publication
     blockers.push({
       code: "review_too_short",
       message: `The published review must be at least ${MIN_REVIEW_LENGTH} characters of original writing.`,
+    });
+  }
+
+  /* ---- Series shape ----------------------------------------------------- */
+
+  // A series listing with no season count is not publishable: the count is
+  // rendered on the card, the masthead and the JSON-LD, and a blank one would
+  // make the series section look broken. Mirrors the
+  // `movies_series_requires_seasons` CHECK constraint.
+  if (movie.contentKind === "series" && (movie.seasonCount === null || movie.seasonCount < 1)) {
+    blockers.push({
+      code: "series_seasons_missing",
+      message: "A series needs at least one season before it can go live.",
+    });
+  }
+
+  if (movie.contentKind === "series" && (movie.episodeCount === null || movie.episodeCount < 1)) {
+    warnings.push({
+      code: "series_episodes_missing",
+      message: "No episode count. The card and the series page will show seasons only.",
     });
   }
 

@@ -41,8 +41,10 @@ export const revalidate = 300;
  * limit or fall back to on-demand rendering — do not let it grow silently.
  */
 export async function generateStaticParams() {
-  const movies = await listPublishedSlugsForSitemap();
-  return movies.map((movie) => ({ slug: movie.slug }));
+  const entries = await listPublishedSlugsForSitemap();
+  return entries
+    .filter((entry) => entry.contentKind === "movie")
+    .map((entry) => ({ slug: entry.slug }));
 }
 
 export async function generateMetadata({
@@ -53,7 +55,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const detail = await getPublishedMovieBySlug(slug);
 
-  if (!detail) {
+  if (!detail || detail.movie.contentKind !== "movie") {
     return { title: "Film not found", robots: { index: false, follow: false } };
   }
 
@@ -104,9 +106,12 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ sl
     listRelatedMovies(slug, 6),
   ]);
 
-  // Only published records resolve. Drafts and archived films are a 404, so a
-  // guessed slug cannot be used to discover unpublished content.
-  if (!detail) notFound();
+  // Only published records resolve, and only films. Drafts and archived films
+  // are a 404, so a guessed slug cannot be used to discover unpublished
+  // content. A published *series* is also a 404 here: it lives at
+  // `/series/<slug>`, and serving the same content at two URLs would be a
+  // duplicate-content defect.
+  if (!detail || detail.movie.contentKind !== "movie") notFound();
 
   const { movie, genres, review, links } = detail;
 

@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
   { href: "/movies", label: "Films" },
+  { href: "/series", label: "Series" },
   { href: "/genres", label: "Genres" },
   { href: "/years", label: "Years" },
   { href: "/about", label: "About" },

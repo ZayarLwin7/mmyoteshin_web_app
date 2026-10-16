@@ -132,6 +132,9 @@ async function SearchResults({
       genres={genres}
       years={years.map((entry) => entry.year)}
       basePath="/search"
+      // Search spans both sections, so the count uses a neutral noun rather
+      // than claiming every hit is a film.
+      itemNoun="result"
       emptyTitle={`Nothing matched “${term}”`}
       emptyDescription="Check the spelling, or try a shorter part of the title."
     />

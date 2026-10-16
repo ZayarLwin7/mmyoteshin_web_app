@@ -1,5 +1,5 @@
 import { LinkButton } from "@/components/ui/button";
-import { formatRating, formatRuntime } from "@/lib/utils";
+import { formatRating, formatRuntime, formatSeriesLength } from "@/lib/utils";
 import type { MovieCard as MovieCardData } from "@/db/queries/public";
 
 import { MetaRow } from "./meta-row";
@@ -25,6 +25,11 @@ import { Poster } from "./poster";
 export function HomeHero({ movie }: { movie: MovieCardData }) {
   const rating = formatRating(movie.rating, movie.ratingScale);
   const runtime = formatRuntime(movie.runtimeMinutes);
+  const length = formatSeriesLength(movie.seasonCount, movie.episodeCount);
+  // A series can be the featured entry when no film is, so the hero follows
+  // the record's own kind rather than assuming a film.
+  const detailHref =
+    movie.contentKind === "series" ? `/series/${movie.slug}` : `/movies/${movie.slug}`;
 
   return (
     <section
@@ -63,7 +68,9 @@ export function HomeHero({ movie }: { movie: MovieCardData }) {
         />
 
         <div className="min-w-0">
-          <p className="text-eyebrow mb-3">Featured film</p>
+          <p className="text-eyebrow mb-3">
+            {movie.contentKind === "series" ? "Featured series" : "Featured film"}
+          </p>
 
           <h1 id="hero-title" className="text-display text-ink font-semibold">
             {movie.title}
@@ -73,7 +80,7 @@ export function HomeHero({ movie }: { movie: MovieCardData }) {
             className="mt-5 text-sm"
             items={[
               { key: "year", content: movie.releaseYear },
-              { key: "runtime", content: runtime },
+              { key: "length", content: runtime ?? length },
               {
                 key: "rating",
                 content: rating ? `Editorial score ${rating}` : null,
@@ -88,7 +95,7 @@ export function HomeHero({ movie }: { movie: MovieCardData }) {
           />
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <LinkButton href={`/movies/${movie.slug}`} size="lg">
+            <LinkButton href={detailHref} size="lg">
               Read the review
             </LinkButton>
             <LinkButton href="/movies" variant="secondary" size="lg">

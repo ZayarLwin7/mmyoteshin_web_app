@@ -20,20 +20,35 @@ to store or serve the file, we do not publish it.
 
 ---
 
-## 2. Adding a film
+## 2. Adding a film or a series
 
-Work through the film page in this order. The readiness panel tells you exactly what is still
+Work through the record page in this order. The readiness panel tells you exactly what is still
 blocking publication.
+
+Films and series are two sections of the site — `/movies` and `/series` — but they are **one table**
+with a `content_kind` column, and they share the genre join table, reviews and download links. What
+you pick under **Type** decides which public URL the record gets:
+
+| Type | Public listing | Public detail | "Related" rail |
+| --- | --- | --- | --- |
+| Film | `/movies` | `/movies/<slug>` | other films |
+| Series | `/series` | `/series/<slug>` | other series |
+
+A record is never served at the other kind's URL: a published series requested at
+`/movies/<slug>` is a 404, not a duplicate page.
 
 ### 2.1 Metadata — `/admin/movies/new`
 
 | Field | Guidance |
 | --- | --- |
-| Title | As the film is generally known. Required. |
+| Type | `Film` or `Series`. Sets which section the record belongs to. |
+| Title | As the film or series is generally known. Required. |
 | Original title | The title in its original language, if different. |
 | URL slug | Generated from the title. Change it only before publishing — changing a slug after publication breaks existing links. |
 | Release year | Required for publication. |
-| Runtime | Minutes. |
+| Runtime | Minutes. **Films only** — it is disabled for a series. |
+| Seasons | **Series only, and required.** A series cannot be published without at least one season. |
+| Episodes | **Series only, optional.** The total across all seasons. Missing it is a warning, not a blocker. |
 | Language / country | ISO 639-1 code, and country of origin. |
 | Content rating | **As certified.** Do not invent one. |
 | Genres | At least one is required for publication. |
@@ -41,9 +56,13 @@ blocking publication.
 | Artwork | Poster and backdrop URLs. The host must be in `NEXT_PUBLIC_IMAGE_HOSTS` or the image will not load. |
 | Artwork credit | Who supplied the image, if it is not ours. Shown publicly. |
 | Curation weight | Higher sorts earlier in Editor's picks. `0` excludes it from that rail. |
-| Featured | Eligible for the home hero. Use sparingly — three to five films. |
+| Featured | Eligible for the home hero. Use sparingly — three to five records. |
 
-New films are always saved as **draft**. Publishing is a separate, permissioned step.
+New records are always saved as **draft**. Publishing is a separate, permissioned step.
+
+The season and episode fields are only shown for a series, but they are always submitted — so
+switching the type back to Film after filling them in produces a field error rather than a silent
+save. The same rule is enforced by a database CHECK constraint.
 
 ### 2.2 Editorial review
 
@@ -65,11 +84,12 @@ unique index.
 The readiness panel must read **"Ready to publish"**. If it is blocked, the panel lists every reason.
 Click **Publish**, then confirm.
 
-Publishing makes the film publicly visible, adds it to the catalogue and the sitemap, and writes an
-audit entry. Archiving reverses all of that.
+Publishing makes the record publicly visible, adds it to its section's catalogue and the sitemap, and
+writes an audit entry. Archiving reverses all of that.
 
-**A film may be published with no download link at all.** The editorial catalogue is the point; a
-missing link is not a defect. The film page says so plainly rather than showing an empty section.
+**A film or series may be published with no download link at all.** The editorial catalogue is the
+point; a missing link is not a defect. The detail page says so plainly rather than showing an empty
+section.
 
 ---
 

@@ -26,6 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: absoluteUrl("/"), lastModified: now, changeFrequency: "daily", priority: 1 },
     { url: absoluteUrl("/movies"), lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: absoluteUrl("/series"), lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: absoluteUrl("/genres"), lastModified: now, changeFrequency: "weekly", priority: 0.6 },
     { url: absoluteUrl("/years"), lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: absoluteUrl("/about"), lastModified: now, changeFrequency: "monthly", priority: 0.5 },
@@ -44,12 +45,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...staticRoutes,
 
-    ...movies.map((movie) => ({
-      url: absoluteUrl(`/movies/${movie.slug}`),
-      lastModified: movie.updatedAt,
-      changeFrequency: "monthly" as const,
-      priority: 0.8,
-    })),
+    // Films and series are separate sections, so each detail URL is built from
+    // the record's own `contentKind`. Without the split every series slug would
+    // also be submitted under `/movies/<slug>`, where it answers 404.
+    ...movies
+      .filter((movie) => movie.contentKind === "movie")
+      .map((movie) => ({
+        url: absoluteUrl(`/movies/${movie.slug}`),
+        lastModified: movie.updatedAt,
+        changeFrequency: "monthly" as const,
+        priority: 0.8,
+      })),
+
+    ...movies
+      .filter((movie) => movie.contentKind === "series")
+      .map((movie) => ({
+        url: absoluteUrl(`/series/${movie.slug}`),
+        lastModified: movie.updatedAt,
+        changeFrequency: "monthly" as const,
+        priority: 0.8,
+      })),
 
     // Only genres that actually contain a published film.
     ...genres

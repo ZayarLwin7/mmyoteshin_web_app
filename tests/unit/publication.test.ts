@@ -27,6 +27,9 @@ function baseInput(overrides: Partial<ReadinessInput> = {}): ReadinessInput {
       posterUrl: "https://images.test/poster.jpg",
       metaTitle: "The Quiet Harbour",
       metaDescription: "A description long enough to be useful in search results.",
+      contentKind: "movie",
+      seasonCount: null,
+      episodeCount: null,
     },
     genreIds: ["genre-1"],
     reviews: [{ status: "published", body: "B".repeat(MIN_REVIEW_LENGTH + 50) }],
@@ -209,6 +212,61 @@ describe("evaluatePublicationReadiness", () => {
     expect(result.warnings.map((issue) => issue.code)).toContain("meta_description_missing");
   });
 
+  /* ---- Series shape ------------------------------------------------------ */
+
+  it("blocks a series with no season count", () => {
+    const result = evaluatePublicationReadiness(
+      baseInput({
+        movie: { ...baseInput().movie, contentKind: "series", seasonCount: null },
+      }),
+    );
+
+    expect(result.ready).toBe(false);
+    expect(result.blockers.map((issue) => issue.code)).toContain("series_seasons_missing");
+  });
+
+  it("blocks a series whose season count is zero rather than null", () => {
+    // 0 is what an editor gets by typing a zero, not by leaving the field blank,
+    // and it is just as unpublishable.
+    const result = evaluatePublicationReadiness(
+      baseInput({
+        movie: { ...baseInput().movie, contentKind: "series", seasonCount: 0 },
+      }),
+    );
+
+    expect(result.blockers.map((issue) => issue.code)).toContain("series_seasons_missing");
+  });
+
+  it("publishes a series that carries a season count", () => {
+    const result = evaluatePublicationReadiness(
+      baseInput({
+        movie: { ...baseInput().movie, contentKind: "series", seasonCount: 3 },
+      }),
+    );
+
+    expect(result.ready).toBe(true);
+    expect(result.blockers).toHaveLength(0);
+  });
+
+  it("warns about a series with no episode total, but does not block it", () => {
+    const result = evaluatePublicationReadiness(
+      baseInput({
+        movie: { ...baseInput().movie, contentKind: "series", seasonCount: 3, episodeCount: null },
+      }),
+    );
+
+    expect(result.ready).toBe(true);
+    expect(result.warnings.map((issue) => issue.code)).toContain("series_episodes_missing");
+  });
+
+  it("never raises the series rules for a film", () => {
+    const result = evaluatePublicationReadiness(baseInput());
+
+    expect(result.ready).toBe(true);
+    expect(result.blockers.map((issue) => issue.code)).not.toContain("series_seasons_missing");
+    expect(result.warnings.map((issue) => issue.code)).not.toContain("series_episodes_missing");
+  });
+
   it("reports every blocker at once rather than only the first", () => {
     const result = evaluatePublicationReadiness({
       movie: {
@@ -219,6 +277,9 @@ describe("evaluatePublicationReadiness", () => {
         posterUrl: null,
         metaTitle: null,
         metaDescription: null,
+        contentKind: "movie",
+        seasonCount: null,
+        episodeCount: null,
       },
       genreIds: [],
       reviews: [],

@@ -43,11 +43,16 @@ export type MovieCard = {
   posterUrl: string | null;
   contentRating: string | null;
   runtimeMinutes: number | null;
+  /** Series only; null for a film. */
+  seasonCount: number | null;
+  /** Series only; null for a film. */
+  episodeCount: number | null;
   languageCode: string | null;
   genres: { name: string; slug: string }[];
   rating: string | null;
   ratingScale: string;
   ratingSource: string;
+  contentKind: "movie" | "series";
 };
 
 /** A full detail-page payload. */
@@ -113,7 +118,10 @@ type MovieRow = Pick<
   | "posterUrl"
   | "contentRating"
   | "runtimeMinutes"
+  | "seasonCount"
+  | "episodeCount"
   | "languageCode"
+  | "contentKind"
 >;
 
 /**
@@ -174,11 +182,14 @@ async function decorateMovieRows(rows: MovieRow[]): Promise<MovieCard[]> {
       posterUrl: row.posterUrl,
       contentRating: row.contentRating,
       runtimeMinutes: row.runtimeMinutes,
+      seasonCount: row.seasonCount,
+      episodeCount: row.episodeCount,
       languageCode: row.languageCode,
       genres: genresByMovie.get(row.id) ?? [],
       rating: review?.rating ?? null,
       ratingScale: review?.ratingScale ?? "10.0",
       ratingSource: review?.ratingSource ?? "editorial",
+      contentKind: row.contentKind,
     };
   });
 }
@@ -191,7 +202,10 @@ const CARD_COLUMNS = {
   posterUrl: movies.posterUrl,
   contentRating: movies.contentRating,
   runtimeMinutes: movies.runtimeMinutes,
+  seasonCount: movies.seasonCount,
+  episodeCount: movies.episodeCount,
   languageCode: movies.languageCode,
+  contentKind: movies.contentKind,
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -207,6 +221,12 @@ export type CatalogueFilters = {
   language?: string | null;
   contentRating?: string | null;
   sort?: "newest" | "title" | "year";
+  /**
+   * Restrict the listing to one kind. Omit for "everything", which is what the
+   * search page wants — a visitor searching "tears of steel" should not have to
+   * know whether it is filed as a film or a series.
+   */
+  contentKind?: "movie" | "series" | null;
 };
 
 export type CataloguePage = {
@@ -219,6 +239,10 @@ export type CataloguePage = {
 
 function buildCatalogueConditions(filters: CatalogueFilters): SQL[] {
   const conditions: SQL[] = [publishedMovieCondition()];
+
+  if (filters.contentKind) {
+    conditions.push(eq(movies.contentKind, filters.contentKind));
+  }
 
   const term = filters.q?.trim();
   if (term) {
@@ -281,11 +305,14 @@ type CatalogueRow = {
   poster_url: string | null;
   content_rating: string | null;
   runtime_minutes: number | null;
+  season_count: number | null;
+  episode_count: number | null;
   language_code: string | null;
   genres: { name: string; slug: string }[] | null;
   rating: string | null;
   rating_scale: string | null;
   rating_source: string | null;
+  content_kind: "movie" | "series";
 };
 
 function catalogueRowToCard(row: CatalogueRow): MovieCard {
@@ -297,11 +324,14 @@ function catalogueRowToCard(row: CatalogueRow): MovieCard {
     posterUrl: row.poster_url,
     contentRating: row.content_rating,
     runtimeMinutes: row.runtime_minutes,
+    seasonCount: row.season_count,
+    episodeCount: row.episode_count,
     languageCode: row.language_code,
     genres: row.genres ?? [],
     rating: row.rating,
     ratingScale: row.rating_scale ?? "10.0",
     ratingSource: row.rating_source ?? "editorial",
+    contentKind: row.content_kind,
   };
 }
 
@@ -339,6 +369,9 @@ export async function listPublishedMovies(filters: CatalogueFilters = {}): Promi
         movies.poster_url,
         movies.content_rating,
         movies.runtime_minutes,
+        movies.season_count,
+        movies.episode_count,
+        movies.content_kind,
         movies.language_code,
         coalesce(film_genres.list, '[]'::json) as genres,
         film_review.rating,
@@ -384,12 +417,28 @@ export async function listPublishedMovies(filters: CatalogueFilters = {}): Promi
 /* Home page collections                                                      */
 /* -------------------------------------------------------------------------- */
 
-export async function listFeaturedMovies(limit = 5): Promise<MovieCard[]> {
+/**
+ * Home-page collections.
+ *
+ * Every one of these takes a `contentKind` and defaults to `"movie"`, which is
+ * what preserves the existing home page: the rails there are film rails. The
+ * series page passes `"series"` so it never shows a film.
+ */
+export async function listFeaturedMovies(
+  limit = 5,
+  contentKind: "movie" | "series" = "movie",
+): Promise<MovieCard[]> {
   const rows = await executePrepared(
     db
       .select(CARD_COLUMNS)
       .from(movies)
-      .where(and(publishedMovieCondition(), eq(movies.featured, true)))
+      .where(
+        and(
+          publishedMovieCondition(),
+          eq(movies.contentKind, contentKind),
+          eq(movies.featured, true),
+        ),
+      )
       .orderBy(desc(movies.curationWeight), desc(movies.publishedAt))
       .limit(limit),
   );
@@ -397,12 +446,15 @@ export async function listFeaturedMovies(limit = 5): Promise<MovieCard[]> {
   return decorateMovieRows(rows);
 }
 
-export async function listRecentlyPublished(limit = 12): Promise<MovieCard[]> {
+export async function listRecentlyPublished(
+  limit = 12,
+  contentKind: "movie" | "series" = "movie",
+): Promise<MovieCard[]> {
   const rows = await executePrepared(
     db
       .select(CARD_COLUMNS)
       .from(movies)
-      .where(publishedMovieCondition())
+      .where(and(publishedMovieCondition(), eq(movies.contentKind, contentKind)))
       .orderBy(desc(movies.publishedAt))
       .limit(limit),
   );
@@ -414,12 +466,21 @@ export async function listRecentlyPublished(limit = 12): Promise<MovieCard[]> {
  * "Editor's picks" — ordered by the manual curation weight an editor sets,
  * never by a fabricated popularity metric.
  */
-export async function listCuratedMovies(limit = 12): Promise<MovieCard[]> {
+export async function listCuratedMovies(
+  limit = 12,
+  contentKind: "movie" | "series" = "movie",
+): Promise<MovieCard[]> {
   const rows = await executePrepared(
     db
       .select(CARD_COLUMNS)
       .from(movies)
-      .where(and(publishedMovieCondition(), sql`${movies.curationWeight} <> 0`))
+      .where(
+        and(
+          publishedMovieCondition(),
+          eq(movies.contentKind, contentKind),
+          sql`${movies.curationWeight} <> 0`,
+        ),
+      )
       .orderBy(desc(movies.curationWeight), desc(movies.publishedAt))
       .limit(limit),
   );
@@ -427,14 +488,23 @@ export async function listCuratedMovies(limit = 12): Promise<MovieCard[]> {
   return decorateMovieRows(rows);
 }
 
-/** Highest-rated published films, by editorial score. */
-export async function listTopRatedMovies(limit = 12): Promise<MovieCard[]> {
+/** Highest-rated published entries, by editorial score. */
+export async function listTopRatedMovies(
+  limit = 12,
+  contentKind: "movie" | "series" = "movie",
+): Promise<MovieCard[]> {
   const rows = await executePrepared(
     db
       .select(CARD_COLUMNS)
       .from(movies)
       .innerJoin(reviews, and(eq(reviews.movieId, movies.id), publishedReviewCondition()))
-      .where(and(publishedMovieCondition(), isNotNull(reviews.rating)))
+      .where(
+        and(
+          publishedMovieCondition(),
+          eq(movies.contentKind, contentKind),
+          isNotNull(reviews.rating),
+        ),
+      )
       .orderBy(desc(reviews.rating), desc(movies.publishedAt))
       .limit(limit),
   );
@@ -579,7 +649,18 @@ export async function getPublicDownloadLinkById(id: string) {
  * resolve first, so the two can run concurrently. On a database in another
  * region one saved round trip is worth more than the subquery costs.
  */
-export async function listRelatedMovies(slug: string, limit = 6): Promise<MovieCard[]> {
+/**
+ * Entries sharing a genre with the one being viewed.
+ *
+ * Scoped to the same `contentKind` so a series never recommends films and a
+ * film never recommends series — the two are separate sections of the site, and
+ * mixing them in the "related" rail would undercut that.
+ */
+export async function listRelatedMovies(
+  slug: string,
+  limit = 6,
+  contentKind: "movie" | "series" = "movie",
+): Promise<MovieCard[]> {
   const genresOfThisFilm = db
     .select({ genreId: movieGenres.genreId })
     .from(movieGenres)
@@ -595,7 +676,14 @@ export async function listRelatedMovies(slug: string, limit = 6): Promise<MovieC
     db
       .select(CARD_COLUMNS)
       .from(movies)
-      .where(and(publishedMovieCondition(), ne(movies.slug, slug), inArray(movies.id, sharesGenre)))
+      .where(
+        and(
+          publishedMovieCondition(),
+          eq(movies.contentKind, contentKind),
+          ne(movies.slug, slug),
+          inArray(movies.id, sharesGenre),
+        ),
+      )
       .orderBy(desc(movies.publishedAt))
       .limit(limit),
   );
@@ -615,7 +703,15 @@ export type GenreWithCount = {
   movieCount: number;
 };
 
-export async function listGenresWithCounts(): Promise<GenreWithCount[]> {
+/**
+ * Genres with a count of published entries that carry them.
+ *
+ * `contentKind` scopes the counts to one kind, so the filter dropdown on
+ * `/series` lists series genres rather than film ones. Omit it for everything.
+ */
+export async function listGenresWithCounts(
+  contentKind?: "movie" | "series",
+): Promise<GenreWithCount[]> {
   const rows = await executePrepared(
     db
       .select({
@@ -628,7 +724,14 @@ export async function listGenresWithCounts(): Promise<GenreWithCount[]> {
       })
       .from(genres)
       .leftJoin(movieGenres, eq(movieGenres.genreId, genres.id))
-      .leftJoin(movies, and(eq(movies.id, movieGenres.movieId), publishedMovieCondition()))
+      .leftJoin(
+        movies,
+        and(
+          eq(movies.id, movieGenres.movieId),
+          publishedMovieCondition(),
+          contentKind ? eq(movies.contentKind, contentKind) : undefined,
+        ),
+      )
       .groupBy(genres.id, genres.name, genres.slug, genres.description, genres.displayOrder)
       .orderBy(asc(genres.displayOrder), asc(genres.name)),
   );
@@ -656,7 +759,9 @@ export const getGenreBySlug = cache(loadGenreBySlug);
 
 export type YearWithCount = { year: number; movieCount: number };
 
-export async function listYearsWithCounts(): Promise<YearWithCount[]> {
+export async function listYearsWithCounts(
+  contentKind?: "movie" | "series",
+): Promise<YearWithCount[]> {
   const rows = await executePrepared(
     db
       .select({
@@ -664,7 +769,13 @@ export async function listYearsWithCounts(): Promise<YearWithCount[]> {
         movieCount: sql<number>`count(*)::int`,
       })
       .from(movies)
-      .where(and(publishedMovieCondition(), isNotNull(movies.releaseYear)))
+      .where(
+        and(
+          publishedMovieCondition(),
+          isNotNull(movies.releaseYear),
+          contentKind ? eq(movies.contentKind, contentKind) : undefined,
+        ),
+      )
       .groupBy(movies.releaseYear)
       .orderBy(desc(movies.releaseYear)),
   );
@@ -678,12 +789,16 @@ export async function listYearsWithCounts(): Promise<YearWithCount[]> {
 /* Sitemap / feed support                                                     */
 /* -------------------------------------------------------------------------- */
 
-export type SitemapEntry = { slug: string; updatedAt: Date };
+export type SitemapEntry = { slug: string; updatedAt: Date; contentKind: "movie" | "series" };
 
 export async function listPublishedSlugsForSitemap(limit = 5000): Promise<SitemapEntry[]> {
   return executePrepared(
     db
-      .select({ slug: movies.slug, updatedAt: movies.updatedAt })
+      .select({
+        slug: movies.slug,
+        updatedAt: movies.updatedAt,
+        contentKind: movies.contentKind,
+      })
       .from(movies)
       .where(publishedMovieCondition())
       .orderBy(desc(movies.updatedAt))

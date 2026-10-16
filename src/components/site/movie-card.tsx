@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
-import { formatRating, formatRuntime } from "@/lib/utils";
+import { formatRating, formatRuntime, formatSeriesLength } from "@/lib/utils";
 import type { MovieCard as MovieCardData } from "@/db/queries/public";
 
 import { MetaRow } from "./meta-row";
@@ -25,11 +25,15 @@ export function MovieCard({
 }) {
   const rating = formatRating(movie.rating, movie.ratingScale);
   const runtime = formatRuntime(movie.runtimeMinutes);
+  const length = formatSeriesLength(movie.seasonCount, movie.episodeCount);
 
   return (
     <article className="group relative">
       <Link
-        href={`/movies/${movie.slug}`}
+        // Films and series are separate sections with separate detail routes,
+        // so the card has to follow the record's own kind rather than assume
+        // `/movies/`.
+        href={movie.contentKind === "series" ? `/series/${movie.slug}` : `/movies/${movie.slug}`}
         className="rounded-card focus-visible:outline-accent block transition-transform duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-4 active:scale-[0.98]"
       >
         <Poster
@@ -50,7 +54,7 @@ export function MovieCard({
             className="gap-y-1 text-xs [--meta-gap:0.5rem]"
             items={[
               { key: "year", content: movie.releaseYear },
-              { key: "runtime", content: runtime },
+              { key: "length", content: runtime ?? length },
               {
                 key: "rating",
                 content: rating,

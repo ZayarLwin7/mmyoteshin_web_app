@@ -22,6 +22,15 @@ import {
 
 export const movieStatusEnum = pgEnum("movie_status", ["draft", "published", "archived"]);
 
+/**
+ * What kind of thing a catalogue entry is.
+ *
+ * Films and series share one table deliberately: reviews, genres and download
+ * links all key off `movies.id`, so a second table would have duplicated every
+ * query, route and admin screen. See `migrations/0003_content_kind.sql`.
+ */
+export const contentKindEnum = pgEnum("content_kind", ["movie", "series"]);
+
 export const reviewStatusEnum = pgEnum("review_status", ["draft", "published", "archived"]);
 
 /**
@@ -134,6 +143,10 @@ export const movies = pgTable(
     releaseYear: integer("release_year"),
     releaseDate: timestamp("release_date", { withTimezone: false, mode: "string" }),
     runtimeMinutes: integer("runtime_minutes"),
+    /** Series only: number of seasons. Null for a film. */
+    seasonCount: integer("season_count"),
+    /** Series only: number of episodes across all seasons. Null for a film. */
+    episodeCount: integer("episode_count"),
     synopsis: text("synopsis"),
     /** Original editorial copy only — never copied from another site. */
     editorialNote: text("editorial_note"),
@@ -145,6 +158,8 @@ export const movies = pgTable(
     country: varchar("country", { length: 80 }),
     contentRating: varchar("content_rating", { length: 24 }),
     status: movieStatusEnum("status").notNull().default("draft"),
+    /** Film or series. Defaults to `movie`, so pre-existing rows are films. */
+    contentKind: contentKindEnum("content_kind").notNull().default("movie"),
     featured: boolean("featured").notNull().default(false),
     /** Manual ordering weight for curated rails; higher sorts first. */
     curationWeight: integer("curation_weight").notNull().default(0),
@@ -160,6 +175,9 @@ export const movies = pgTable(
   (t) => [
     uniqueIndex("movies_slug_key").on(t.slug),
     index("movies_status_published_at_idx").on(t.status, t.publishedAt),
+    // Both listing routes (`/movies`, `/series`) filter on kind first, then
+    // status, then order by recency — so the leading column is `content_kind`.
+    index("movies_content_kind_status_published_at_idx").on(t.contentKind, t.status, t.publishedAt),
     index("movies_release_year_idx").on(t.releaseYear),
     index("movies_featured_idx").on(t.featured, t.curationWeight),
     // Supports case-insensitive title search without a functional index on the
@@ -171,6 +189,19 @@ export const movies = pgTable(
     ),
     check("movies_runtime_positive", sql`${t.runtimeMinutes} is null or ${t.runtimeMinutes} > 0`),
     check("movies_title_not_blank", sql`length(btrim(${t.title})) > 0`),
+    // Season and episode counts are positive when present, and belong to a
+    // series only. A published series must declare its seasons; a film must not
+    // claim any. Drafts are exempt so work in progress can be saved.
+    check("movies_season_count_positive", sql`${t.seasonCount} is null or ${t.seasonCount} > 0`),
+    check("movies_episode_count_positive", sql`${t.episodeCount} is null or ${t.episodeCount} > 0`),
+    check(
+      "series_requires_seasons",
+      sql`${t.contentKind} <> 'series' or ${t.status} <> 'published' or ${t.seasonCount} is not null`,
+    ),
+    check(
+      "movie_has_no_seasons",
+      sql`${t.contentKind} <> 'movie' or (${t.seasonCount} is null and ${t.episodeCount} is null)`,
+    ),
   ],
 );
 

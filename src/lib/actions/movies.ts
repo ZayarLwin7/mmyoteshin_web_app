@@ -83,7 +83,9 @@ export async function updateMovieAction(
     revalidatePath("/admin/movies");
     revalidatePath(`/admin/movies/${id}`);
     revalidatePath(`/movies/${movie.slug}`);
+    revalidatePath(`/series/${movie.slug}`);
     revalidatePath("/movies");
+    revalidatePath("/series");
     revalidatePath("/");
 
     return actionSuccess("Saved.");
@@ -105,7 +107,9 @@ export async function publishMovieAction(
     revalidatePath("/admin/movies");
     revalidatePath(`/admin/movies/${id}`);
     revalidatePath(`/movies/${movie.slug}`);
+    revalidatePath(`/series/${movie.slug}`);
     revalidatePath("/movies");
+    revalidatePath("/series");
     revalidatePath("/");
     revalidatePath("/sitemap.xml");
 
@@ -128,7 +132,9 @@ export async function archiveMovieAction(
     revalidatePath("/admin/movies");
     revalidatePath(`/admin/movies/${id}`);
     revalidatePath(`/movies/${movie.slug}`);
+    revalidatePath(`/series/${movie.slug}`);
     revalidatePath("/movies");
+    revalidatePath("/series");
     revalidatePath("/");
     revalidatePath("/sitemap.xml");
 

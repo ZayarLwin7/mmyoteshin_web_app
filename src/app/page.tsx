@@ -40,23 +40,27 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const [featured, latest, curated, topRated, genres] = await Promise.all([
+  const [featured, latest, latestSeries, curated, topRated, genres] = await Promise.all([
     listFeaturedMovies(1),
     listRecentlyPublished(12),
+    listRecentlyPublished(12, "series"),
     listCuratedMovies(12),
     listTopRatedMovies(12),
     listGenresWithCounts(),
   ]);
 
-  const hero = featured[0] ?? latest[0] ?? null;
+  const hero = featured[0] ?? latest[0] ?? latestSeries[0] ?? null;
   const populatedGenres = genres.filter((genre) => genre.movieCount > 0);
 
-  if (!hero) {
+  // Neither section has anything live yet. Series count too: the site may be
+  // part-published, and claiming "nothing has been published" while a series
+  // rail is visible two paragraphs down would simply be wrong.
+  if (!hero && latestSeries.length === 0) {
     return (
       <div className="container-page py-24">
         <EmptyState
           title="The catalogue is being prepared"
-          description="No films have been published yet. Once the editorial team publishes the first reviews they will appear here."
+          description="No films or series have been published yet. Once the editorial team publishes the first reviews they will appear here."
           action={<LinkButton href="/about">Read about our editorial standards</LinkButton>}
         />
       </div>
@@ -97,6 +101,23 @@ export default async function HomePage() {
         description="Ranked by our editorial score, on a documented 0–10 scale."
         movies={topRated}
       />
+
+      {/*
+        Only rendered when a series is actually published. An empty rail with a
+        "View all" link to an empty section is worse than no rail at all, and
+        `listRecentlyPublished(12, "series")` is scoped so this stays quiet
+        until the series section has content.
+      */}
+      {latestSeries.length > 0 ? (
+        <MovieRail
+          id="rail-latest-series"
+          eyebrow="Newly published"
+          title="Latest series"
+          description="The most recent series reviews added to the catalogue."
+          movies={latestSeries}
+          viewAllHref="/series"
+        />
+      ) : null}
 
       {populatedGenres.length > 0 ? (
         <section aria-labelledby="browse-genres" className="container-page py-12">

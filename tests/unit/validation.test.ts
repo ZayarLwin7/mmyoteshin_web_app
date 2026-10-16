@@ -168,6 +168,58 @@ describe("movieInputSchema", () => {
       true,
     );
   });
+
+  it("defaults to a film so an existing form keeps working", () => {
+    const parsed = movieInputSchema.parse({ title: "Arrival" });
+
+    expect(parsed.contentKind).toBe("movie");
+    expect(parsed.seasonCount).toBeNull();
+    expect(parsed.episodeCount).toBeNull();
+  });
+
+  it("accepts a series with a season count", () => {
+    const parsed = movieInputSchema.parse({
+      title: "The Harbour",
+      contentKind: "series",
+      seasonCount: "3",
+      episodeCount: "24",
+    });
+
+    expect(parsed.contentKind).toBe("series");
+    expect(parsed.seasonCount).toBe(3);
+    expect(parsed.episodeCount).toBe(24);
+  });
+
+  it("rejects a series with no season count", () => {
+    const result = movieInputSchema.safeParse({ title: "The Harbour", contentKind: "series" });
+
+    expect(result.success).toBe(false);
+    // Attached to the field the editor has to fix, not to the object as a whole.
+    if (!result.success) {
+      expect(result.error.issues[0]?.path).toEqual(["seasonCount"]);
+    }
+  });
+
+  it("rejects a film carrying series-only counts", () => {
+    expect(movieInputSchema.safeParse({ title: "Arrival", seasonCount: "3" }).success).toBe(false);
+    expect(movieInputSchema.safeParse({ title: "Arrival", episodeCount: "24" }).success).toBe(
+      false,
+    );
+    expect(movieInputSchema.safeParse({ title: "Arrival" }).success).toBe(true);
+  });
+
+  it("rejects a season or episode count outside the plausible range", () => {
+    expect(
+      movieInputSchema.safeParse({ title: "S", contentKind: "series", seasonCount: "0" }).success,
+    ).toBe(false);
+    expect(
+      movieInputSchema.safeParse({ title: "S", contentKind: "series", seasonCount: "201" }).success,
+    ).toBe(false);
+    expect(
+      movieInputSchema.safeParse({ title: "S", contentKind: "series", episodeCount: "5001" })
+        .success,
+    ).toBe(false);
+  });
 });
 
 describe("genreInputSchema", () => {

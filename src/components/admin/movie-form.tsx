@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { ActionForm } from "@/components/admin/action-form";
 import { SubmitButton } from "@/components/admin/submit-button";
 import { Checkbox, Field, Input, Textarea } from "@/components/ui/field";
@@ -7,7 +9,7 @@ import type { ActionState } from "@/lib/actions/types";
 import type { Genre, Movie } from "@/db/schema";
 
 /**
- * Film create/edit form.
+ * Film and series create/edit form.
  *
  * `status` is intentionally not editable here. New records are always created
  * as drafts, and moving a record to published or archived goes through the
@@ -23,6 +25,9 @@ type MovieFormValues = Pick<
   | "releaseYear"
   | "releaseDate"
   | "runtimeMinutes"
+  | "contentKind"
+  | "seasonCount"
+  | "episodeCount"
   | "synopsis"
   | "editorialNote"
   | "posterUrl"
@@ -51,6 +56,22 @@ export function MovieForm({
   submitLabel: string;
 }) {
   const selected = new Set(selectedGenreIds ?? []);
+
+  /**
+   * Which kind the record is, so the season and episode fields only appear for
+   * a series.
+   *
+   * The hidden-by-default fields are still *submitted* — a hidden input is not
+   * submitted, so a blank season count arrives as `null` and the schema's
+   * "a series needs a season count" rule fires with a field error rather than
+   * silently saving. The reveal is a convenience, never the control: the same
+   * rule is enforced by `movieInputSchema` and by the
+   * `movies_series_requires_seasons` CHECK constraint.
+   */
+  const [contentKind, setContentKind] = useState<Movie["contentKind"]>(
+    movie?.contentKind ?? "movie",
+  );
+  const isSeries = contentKind === "series";
 
   return (
     <ActionForm action={action} className="space-y-10" successMessage="Saved.">
@@ -128,6 +149,7 @@ export function MovieForm({
               <Field
                 label="Runtime (minutes)"
                 htmlFor="runtimeMinutes"
+                hint={isSeries ? "Films only" : undefined}
                 error={state.fieldErrors?.runtimeMinutes}
               >
                 <Input
@@ -137,8 +159,71 @@ export function MovieForm({
                   min={1}
                   max={1440}
                   defaultValue={movie?.runtimeMinutes ?? ""}
+                  disabled={isSeries}
                 />
               </Field>
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-3">
+              <Field
+                label="Type"
+                htmlFor="contentKind"
+                hint="Series live at /series, films at /movies."
+                error={state.fieldErrors?.contentKind}
+              >
+                <select
+                  id="contentKind"
+                  name="contentKind"
+                  value={contentKind}
+                  onChange={(event) => setContentKind(event.target.value as Movie["contentKind"])}
+                  className="border-line-strong bg-surface-sunken text-ink h-10 rounded-lg border px-3 text-sm"
+                >
+                  <option value="movie">Film</option>
+                  <option value="series">Series</option>
+                </select>
+              </Field>
+
+              {/*
+                Kept mounted and merely hidden rather than conditionally
+                rendered: a removed input is not submitted, and the server-side
+                schema is what actually enforces the rule, so this is only the
+                editor-facing hint that the two counts belong to a series.
+              */}
+              <div className={isSeries ? undefined : "hidden"}>
+                <Field
+                  label="Seasons"
+                  htmlFor="seasonCount"
+                  hint="Required before a series can be published."
+                  error={state.fieldErrors?.seasonCount}
+                >
+                  <Input
+                    id="seasonCount"
+                    name="seasonCount"
+                    type="number"
+                    min={1}
+                    max={200}
+                    defaultValue={movie?.seasonCount ?? ""}
+                  />
+                </Field>
+              </div>
+
+              <div className={isSeries ? undefined : "hidden"}>
+                <Field
+                  label="Episodes"
+                  htmlFor="episodeCount"
+                  hint="Total across all seasons. Optional."
+                  error={state.fieldErrors?.episodeCount}
+                >
+                  <Input
+                    id="episodeCount"
+                    name="episodeCount"
+                    type="number"
+                    min={1}
+                    max={5000}
+                    defaultValue={movie?.episodeCount ?? ""}
+                  />
+                </Field>
+              </div>
             </div>
           </fieldset>
 
