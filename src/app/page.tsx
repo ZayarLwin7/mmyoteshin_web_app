@@ -75,11 +75,21 @@ export default async function HomePage() {
         <AdSlot format="leaderboard" />
       </div>
 
+      {/*
+        "Latest films", not "Latest reviews".
+
+        The rail is fed by `listRecentlyPublished(12)`, which is scoped to
+        `content_kind = 'movie'` — it has never contained a series. Calling it
+        "Latest reviews" described the *editorial artefact* rather than the
+        catalogue, and sitting directly above a rail labelled "Newly published /
+        Latest series" it read as one long section about reviews, with series
+        apparently filed under it. Both rails now name their own kind.
+      */}
       <MovieRail
         id="rail-latest"
         eyebrow="Newly published"
-        title="Latest reviews"
-        description="The most recent additions to the catalogue."
+        title="Latest films"
+        description="The most recent film reviews added to the catalogue."
         movies={latest}
         viewAllHref="/movies"
       />
@@ -111,7 +121,7 @@ export default async function HomePage() {
       {latestSeries.length > 0 ? (
         <MovieRail
           id="rail-latest-series"
-          eyebrow="Newly published"
+          eyebrow="Newly published series"
           title="Latest series"
           description="The most recent series reviews added to the catalogue."
           movies={latestSeries}

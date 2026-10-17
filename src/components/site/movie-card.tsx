@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
-import { formatRuntime, formatSeriesLength } from "@/lib/utils";
+import { formatRuntime } from "@/lib/utils";
 import type { MovieCard as MovieCardData } from "@/db/queries/public";
 
 import { MetaRow } from "./meta-row";
@@ -25,7 +25,19 @@ export function MovieCard({
   sizes?: string;
 }) {
   const runtime = formatRuntime(movie.runtimeMinutes);
-  const length = formatSeriesLength(movie.seasonCount, movie.episodeCount);
+  /**
+   * Seasons only, for a series.
+   *
+   * A card is 176px wide on a phone. `formatSeriesLength` returns
+   * "4 seasons · 156 episodes", which does not fit on one line there — and the
+   * wrap put a stray interpunct at the start of the second line, which read as
+   * a typo. Seasons identify the series; the episode count belongs on the
+   * detail page, where there is an Episodes section built for it.
+   */
+  const length =
+    movie.contentKind === "series" && movie.seasonCount && movie.seasonCount > 0
+      ? `${movie.seasonCount} season${movie.seasonCount === 1 ? "" : "s"}`
+      : null;
 
   return (
     <article className="group relative">
@@ -90,9 +102,11 @@ export function MovieCard({
         The certification sits in the **top-left** corner and the score in the
         **top-right**: two facts about the same artwork, one on each end of the
         same edge, so they never stack or collide however narrow the card gets.
+        The pill is deliberately compact — at card size a full-size badge read
+        as a label rather than a corner mark.
       */}
       {movie.contentRating ? (
-        <Badge className="absolute top-2 left-2 border-black/40 bg-black/70 text-white backdrop-blur-sm">
+        <Badge className="absolute top-2 left-2 border-black/40 bg-black/70 px-1.5 py-0.5 text-[0.625rem] text-white backdrop-blur-sm">
           {movie.contentRating}
         </Badge>
       ) : null}
@@ -105,7 +119,7 @@ export function MovieCard({
       <RatingBadge
         rating={movie.rating}
         scale={movie.ratingScale}
-        className="absolute top-2 right-2"
+        className="absolute top-2 right-1.5"
       />
     </article>
   );

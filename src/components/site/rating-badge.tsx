@@ -33,13 +33,13 @@ export function RatingBadge({
 }) {
   if (!rating) return null;
 
-  const star = size === "sm" ? "size-3" : "size-3.5";
+  const star = size === "sm" ? "size-2.5" : "size-3";
 
   return (
     <span
       className={cn(
-        "border-accent/40 text-accent inline-flex items-center gap-1 rounded-full border bg-black/75 font-semibold tabular-nums backdrop-blur-sm",
-        size === "sm" ? "text-2xs px-1.5 py-0.5" : "px-2 py-1 text-xs",
+        "border-accent/40 text-accent inline-flex items-center gap-0.5 rounded-full border bg-black/75 font-semibold tabular-nums backdrop-blur-sm",
+        size === "sm" ? "px-1 py-0.5 text-[0.625rem]" : "text-2xs px-1.5 py-0.5",
         className,
       )}
     >
@@ -81,13 +81,13 @@ export function RatingSummary({
   const max = formatRatingScale(scale);
 
   return (
-    <p className="mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-      <span className="text-accent inline-flex items-center gap-2 text-3xl leading-none font-semibold">
-        <svg viewBox="0 0 24 24" className="size-7" fill="currentColor" aria-hidden="true">
+    <p className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <span className="text-accent inline-flex items-center gap-2 text-2xl leading-none font-semibold">
+        <svg viewBox="0 0 24 24" className="size-6" fill="currentColor" aria-hidden="true">
           <path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z" />
         </svg>
         {rating}
-        <span className="text-ink-subtle text-base font-normal">/ {max}</span>
+        <span className="text-ink-subtle text-sm font-normal">/ {max}</span>
       </span>
       <span className="text-ink-subtle text-xs">
         Editorial score

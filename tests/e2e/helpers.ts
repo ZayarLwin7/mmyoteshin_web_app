@@ -56,6 +56,23 @@ export function disclosure(page: Page, summaryText: string): Locator {
   return page.locator("details").filter({ hasText: summaryText });
 }
 
+/**
+ * Open the catalogue filter panel.
+ *
+ * The panel is a collapsed `<details>` so a listing opens on films rather than
+ * on a four-field form. Playwright's actions (`fill`, `selectOption`, `click`)
+ * wait for visibility, so a test that drives those controls has to open the
+ * panel first — exactly as a visitor does. Assertions like `toHaveValue` do
+ * not, which is why the round-trip tests need no change.
+ */
+export async function openCatalogueFilters(page: Page): Promise<void> {
+  const panel = disclosure(page, "Search and filters").first();
+  if ((await panel.count()) === 0) return;
+
+  const isOpen = await panel.evaluate((element) => (element as HTMLDetailsElement).open);
+  if (!isOpen) await panel.locator("summary").click();
+}
+
 /* -------------------------------------------------------------------------- */
 /* Preconditions                                                              */
 /* -------------------------------------------------------------------------- */

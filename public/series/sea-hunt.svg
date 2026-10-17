@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" width="600" height="900" role="img" aria-label="Title card for Sea Hunt">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1a1c"/>
+      <stop offset="0.55" stop-color="#0b1214"/>
+      <stop offset="1" stop-color="#07090a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="30%" r="62%">
+      <stop offset="0" stop-color="#5fb0b2" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#5fb0b2" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <rect width="600" height="900" fill="url(#glow)"/>
+
+  <text x="300" y="64" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" letter-spacing="6" fill="#dcebee" opacity="0.5">MM YOTESHIN</text>
+
+  <g fill="none" stroke="#5fb0b2" stroke-width="3">
+    <circle cx="300" cy="272" r="30" stroke-opacity="0.9"/>
+    <circle cx="352" cy="228" r="9" stroke-opacity="0.6"/>
+    <circle cx="380" cy="268" r="5" stroke-opacity="0.45"/>
+    <path d="M80 356 q 55 -30 110 0 t 110 0 t 110 0 t 110 0" stroke-opacity="0.9"/>
+    <path d="M80 408 q 55 -30 110 0 t 110 0 t 110 0 t 110 0" stroke-opacity="0.65"/>
+    <path d="M80 460 q 55 -30 110 0 t 110 0 t 110 0 t 110 0" stroke-opacity="0.4"/>
+  </g>
+
+  <g font-family="Georgia, 'Times New Roman', serif" fill="#e9f3f4" text-anchor="middle">
+    <text x="300" y="600" font-size="72" letter-spacing="14">SEA</text>
+    <text x="300" y="690" font-size="72" letter-spacing="14">HUNT</text>
+  </g>
+
+  <text x="300" y="752" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" letter-spacing="5" fill="#5fb0b2">1958 · DRAMA</text>
+
+  <line x1="120" y1="800" x2="480" y2="800" stroke="#e9f3f4" stroke-opacity="0.12"/>
+  <text x="300" y="838" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" letter-spacing="4" fill="#e9f3f4" opacity="0.35">TITLE CARD · NOT OFFICIAL ARTWORK</text>
+</svg>

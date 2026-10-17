@@ -146,92 +146,150 @@ export function CatalogueView({
         </p>
       </header>
 
-      {/* ---- Filters ---------------------------------------------------- */}
-      <form
-        method="get"
-        action={basePath}
-        className="rounded-panel border-line bg-surface mb-8 border p-4"
+      {/*
+        ---- Filters ------------------------------------------------------
+
+        Collapsed by default. Four always-open controls — title, genre, year,
+        sort — pushed the first poster most of the way down a phone screen, so
+        the page opened on a form instead of on films. The panel is now a
+        `<details>` disclosure: native, keyboard-operable, and functional with
+        JavaScript disabled, which is the same reason the form itself is a plain
+        GET.
+
+        It is forced **open** whenever a filter is active. A visitor who lands
+        on `/movies?genre=drama` must be able to see what is narrowing the
+        results without hunting for it — a collapsed panel holding an invisible
+        filter is how a listing ends up looking broken.
+      */}
+      <details
+        open={activeFilters.length > 0}
+        className="group rounded-panel border-line bg-surface mb-8 overflow-hidden border"
       >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="filter-q" className="text-ink-muted text-xs font-medium">
-              Title
-            </label>
-            <input
-              id="filter-q"
-              name="q"
-              type="search"
-              defaultValue={filters.q ?? ""}
-              placeholder="Search titles"
-              className="border-line-strong bg-surface-sunken text-ink placeholder:text-ink-subtle hover:border-accent/60 focus:border-accent focus-visible:outline-accent h-10 cursor-pointer rounded-lg border px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-1"
-            />
-          </div>
-
-          {!locked.has("genre") ? (
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="filter-genre" className="text-ink-muted text-xs font-medium">
-                Genre
-              </label>
-              <select
-                id="filter-genre"
-                name="genre"
-                defaultValue={filters.genre ?? ""}
-                className="border-line-strong bg-surface-sunken text-ink placeholder:text-ink-subtle hover:border-accent/60 focus:border-accent focus-visible:outline-accent h-10 cursor-pointer rounded-lg border px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-1"
-              >
-                <option value="">All genres</option>
-                {genres.map((genre) => (
-                  <option key={genre.id} value={genre.slug}>
-                    {genre.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : null}
-
-          {!locked.has("year") ? (
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="filter-year" className="text-ink-muted text-xs font-medium">
-                Year
-              </label>
-              <select
-                id="filter-year"
-                name="year"
-                defaultValue={filters.year ? String(filters.year) : ""}
-                className="border-line-strong bg-surface-sunken text-ink placeholder:text-ink-subtle hover:border-accent/60 focus:border-accent focus-visible:outline-accent h-10 cursor-pointer rounded-lg border px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-1"
-              >
-                <option value="">Any year</option>
-                {years.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : null}
-
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="filter-sort" className="text-ink-muted text-xs font-medium">
-              Sort
-            </label>
-            <select
-              id="filter-sort"
-              name="sort"
-              defaultValue={filters.sort}
-              className="border-line-strong bg-surface-sunken text-ink placeholder:text-ink-subtle hover:border-accent/60 focus:border-accent focus-visible:outline-accent h-10 cursor-pointer rounded-lg border px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-1"
+        <summary className="hover:bg-surface-raised flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3.5 transition-colors duration-150 [&::-webkit-details-marker]:hidden">
+          <span className="flex min-w-0 items-center gap-2.5">
+            <svg
+              viewBox="0 0 24 24"
+              className="text-accent size-4 shrink-0"
+              fill="none"
+              aria-hidden="true"
             >
-              {Object.entries(SORT_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
+              <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.75" />
+              <path
+                d="M16 16l4.5 4.5"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="text-ink truncate text-sm font-medium">Search and filters</span>
+            {activeFilters.length > 0 ? (
+              <span className="border-accent/40 bg-accent/15 text-accent shrink-0 rounded-full border px-1.5 py-0.5 text-[0.625rem] font-semibold tabular-nums">
+                {activeFilters.length}
+              </span>
+            ) : null}
+          </span>
+
+          <span className="text-ink-subtle flex shrink-0 items-center gap-1.5 text-xs">
+            <span className="group-open:hidden">Show</span>
+            <span className="hidden group-open:inline">Hide</span>
+            <svg
+              viewBox="0 0 24 24"
+              className="size-4 transition-transform duration-200 group-open:rotate-180"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M6 9.5l6 6 6-6"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+        </summary>
+
+        <form method="get" action={basePath} className="border-line border-t p-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="filter-q" className="text-ink-muted text-xs font-medium">
+                Title
+              </label>
+              <input
+                id="filter-q"
+                name="q"
+                type="search"
+                defaultValue={filters.q ?? ""}
+                placeholder="Search titles"
+                className="border-line-strong bg-surface-sunken text-ink placeholder:text-ink-subtle hover:border-accent/60 focus:border-accent focus-visible:outline-accent h-10 cursor-pointer rounded-lg border px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-1"
+              />
+            </div>
+
+            {!locked.has("genre") ? (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="filter-genre" className="text-ink-muted text-xs font-medium">
+                  Genre
+                </label>
+                <select
+                  id="filter-genre"
+                  name="genre"
+                  defaultValue={filters.genre ?? ""}
+                  className="border-line-strong bg-surface-sunken text-ink placeholder:text-ink-subtle hover:border-accent/60 focus:border-accent focus-visible:outline-accent h-10 cursor-pointer rounded-lg border px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-1"
+                >
+                  <option value="">All genres</option>
+                  {genres.map((genre) => (
+                    <option key={genre.id} value={genre.slug}>
+                      {genre.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
+            {!locked.has("year") ? (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="filter-year" className="text-ink-muted text-xs font-medium">
+                  Year
+                </label>
+                <select
+                  id="filter-year"
+                  name="year"
+                  defaultValue={filters.year ? String(filters.year) : ""}
+                  className="border-line-strong bg-surface-sunken text-ink placeholder:text-ink-subtle hover:border-accent/60 focus:border-accent focus-visible:outline-accent h-10 cursor-pointer rounded-lg border px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-1"
+                >
+                  <option value="">Any year</option>
+                  {years.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="filter-sort" className="text-ink-muted text-xs font-medium">
+                Sort
+              </label>
+              <select
+                id="filter-sort"
+                name="sort"
+                defaultValue={filters.sort}
+                className="border-line-strong bg-surface-sunken text-ink placeholder:text-ink-subtle hover:border-accent/60 focus:border-accent focus-visible:outline-accent h-10 cursor-pointer rounded-lg border px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-1"
+              >
+                {Object.entries(SORT_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <Button type="submit">Apply filters</Button>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Button type="submit">Apply filters</Button>
 
-          {/*
+            {/*
             Only offered when there is something to clear.
 
             On a locked-filter route (`/genres/[slug]`, `/years/[year]`) with no
@@ -239,37 +297,38 @@ export function CatalogueView({
             changed nothing and the control read as broken. It now appears only
             when at least one removable filter is set.
           */}
-          {activeFilters.length > 0 ? (
-            <LinkButton href={basePath} variant="secondary" size="md">
-              Clear all
-            </LinkButton>
-          ) : null}
+            {activeFilters.length > 0 ? (
+              <LinkButton href={basePath} variant="secondary" size="md">
+                Clear all
+              </LinkButton>
+            ) : null}
 
-          {activeFilters.length > 0 ? (
-            <ul className="flex flex-wrap gap-2">
-              {activeFilters.map((filter) => (
-                <li key={filter.key}>
-                  {/*
+            {activeFilters.length > 0 ? (
+              <ul className="flex flex-wrap gap-2">
+                {activeFilters.map((filter) => (
+                  <li key={filter.key}>
+                    {/*
                     Each chip removes only its own filter, preserving the rest.
                     The close glyph is decorative; the accessible name carries
                     the action so a screen reader announces what will happen.
                   */}
-                  <Link
-                    href={filter.href}
-                    className="border-accent-dim bg-accent/10 text-accent hover:border-accent hover:bg-accent/20 active:bg-accent/25 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition duration-150 active:scale-[0.98]"
-                  >
-                    {filter.label}
-                    <span aria-hidden="true" className="text-accent/70">
-                      ×
-                    </span>
-                    <span className="sr-only">— remove this filter</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      </form>
+                    <Link
+                      href={filter.href}
+                      className="border-accent-dim bg-accent/10 text-accent hover:border-accent hover:bg-accent/20 active:bg-accent/25 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition duration-150 active:scale-[0.98]"
+                    >
+                      {filter.label}
+                      <span aria-hidden="true" className="text-accent/70">
+                        ×
+                      </span>
+                      <span className="sr-only">— remove this filter</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        </form>
+      </details>
 
       {/* ---- Results ---------------------------------------------------- */}
       {result.items.length === 0 ? (

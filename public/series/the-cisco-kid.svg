@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" width="600" height="900" role="img" aria-label="Title card for The Cisco Kid">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b1410"/>
+      <stop offset="0.55" stop-color="#12100e"/>
+      <stop offset="1" stop-color="#0a0908"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="30%" r="62%">
+      <stop offset="0" stop-color="#d99a4e" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#d99a4e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <rect width="600" height="900" fill="url(#glow)"/>
+
+  <text x="300" y="64" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" letter-spacing="6" fill="#e9dcc8" opacity="0.5">MM YOTESHIN</text>
+
+  <g fill="none" stroke="#d99a4e" stroke-width="3" opacity="0.9">
+    <ellipse cx="300" cy="330" rx="150" ry="26"/>
+    <path d="M220 328c6-52 40-84 80-84s74 32 80 84"/>
+    <path d="M236 322c14 16 38 24 64 24s50-8 64-24" stroke-opacity="0.55"/>
+  </g>
+
+  <line x1="240" y1="470" x2="360" y2="470" stroke="#d99a4e" stroke-opacity="0.5" stroke-width="1"/>
+
+  <g font-family="Georgia, 'Times New Roman', serif" fill="#f2e9da" text-anchor="middle">
+    <text x="300" y="560" font-size="34" letter-spacing="10" opacity="0.75">THE</text>
+    <text x="300" y="646" font-size="66" letter-spacing="2">CISCO KID</text>
+  </g>
+
+  <text x="300" y="720" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" letter-spacing="5" fill="#d99a4e">1950 · WESTERN</text>
+
+  <line x1="120" y1="790" x2="480" y2="790" stroke="#f2e9da" stroke-opacity="0.12"/>
+  <text x="300" y="830" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" letter-spacing="4" fill="#f2e9da" opacity="0.35">TITLE CARD · NOT OFFICIAL ARTWORK</text>
+</svg>

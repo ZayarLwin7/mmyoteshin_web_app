@@ -18,9 +18,13 @@
  * attach links to these series would be the one thing this project refuses to
  * do, so rather than fake it, these records publish cleanly without any.
  *
- * Posters are also left unset. The card falls back to a designed placeholder
- * carrying the title, which is honest about artwork we do not have the right
- * to display. Nothing here points at an image host that may 404.
+ * Posters. These five series have no artwork we are licensed to display, so
+ * each one is given a typographic title card drawn for this site and stored
+ * under `public/series/`. The card carries the title, year and genre, and a
+ * footer that says plainly that it is not official artwork — it is not a
+ * still, a logo or a scan, and nothing in it claims otherwise. Before this,
+ * `poster_url` was null and the grid fell back to a placeholder, which made
+ * `/series` read as five broken images rather than as a catalogue.
  *
  * Every record uses a `demo-` slug prefix, so `pnpm db:seed:demo -- --remove`
  * deletes these alongside the demo films.
@@ -40,6 +44,8 @@ const SLUG_PREFIX = "demo-";
 type SampleSeries = {
   slug: string;
   title: string;
+  /** Path to the original title card in `public/`, e.g. `/series/sea-hunt.svg`. */
+  posterPath: string;
   originalTitle: string | null;
   releaseYear: number;
   seasonCount: number;
@@ -69,6 +75,7 @@ const DEMO_SERIES: SampleSeries[] = [
   {
     slug: `${SLUG_PREFIX}the-cisco-kid`,
     title: "The Cisco Kid",
+    posterPath: "/series/the-cisco-kid.svg",
     originalTitle: null,
     releaseYear: 1950,
     seasonCount: 4,
@@ -91,6 +98,7 @@ const DEMO_SERIES: SampleSeries[] = [
   {
     slug: `${SLUG_PREFIX}science-fiction-theatre`,
     title: "Science Fiction Theatre",
+    posterPath: "/series/science-fiction-theatre.svg",
     originalTitle: null,
     releaseYear: 1955,
     seasonCount: 2,
@@ -113,6 +121,7 @@ const DEMO_SERIES: SampleSeries[] = [
   {
     slug: `${SLUG_PREFIX}sea-hunt`,
     title: "Sea Hunt",
+    posterPath: "/series/sea-hunt.svg",
     originalTitle: null,
     releaseYear: 1958,
     seasonCount: 4,
@@ -135,6 +144,7 @@ const DEMO_SERIES: SampleSeries[] = [
   {
     slug: `${SLUG_PREFIX}ramar-of-the-jungle`,
     title: "Ramar of the Jungle",
+    posterPath: "/series/ramar-of-the-jungle.svg",
     originalTitle: null,
     releaseYear: 1952,
     seasonCount: 2,
@@ -157,6 +167,7 @@ const DEMO_SERIES: SampleSeries[] = [
   {
     slug: `${SLUG_PREFIX}highway-patrol`,
     title: "Highway Patrol",
+    posterPath: "/series/highway-patrol.svg",
     originalTitle: null,
     releaseYear: 1955,
     seasonCount: 4,
@@ -278,7 +289,7 @@ async function main() {
 
   for (const series of DEMO_SERIES) {
     const existing = await db
-      .select({ id: movies.id, status: movies.status })
+      .select({ id: movies.id, status: movies.status, posterUrl: movies.posterUrl })
       .from(movies)
       .where(eq(movies.slug, series.slug))
       .limit(1);
@@ -293,6 +304,23 @@ async function main() {
      * up where it stopped: it makes sure the review is there, then publishes.
      */
     if (existing.length > 0 && existing[0].status === "published") {
+      /*
+       * Backfill the title card on records published before it existed.
+       *
+       * The update is deliberately narrow — artwork only — so it cannot
+       * disturb a published record's review, links or status. Without it, a
+       * database seeded by an older version of this script would keep showing
+       * placeholders forever, because the "already published" branch would
+       * skip the record on every subsequent run.
+       */
+      if (!existing[0].posterUrl) {
+        await db
+          .update(movies)
+          .set({ posterUrl: series.posterPath, imageCredit: "Original title card" })
+          .where(eq(movies.id, existing[0].id));
+        console.log(`  poster:  attached the title card to "${series.title}"`);
+      }
+
       skipped += 1;
       console.log(`  skip:    ${series.title} (already published)`);
       continue;
@@ -350,12 +378,15 @@ async function main() {
             runtimeMinutes: null,
             synopsis: series.synopsis,
             editorialNote: null,
-            // No poster and no backdrop. There is no artwork here that we have the
-            // right to display, and an invented URL would render as a broken image.
-            // The card falls back to a designed placeholder carrying the title.
-            posterUrl: null,
+            /*
+             * An original typographic title card, not a still or a logo. It is
+             * drawn for this site, so there is no third-party artwork claim in
+             * it, and it carries "not official artwork" in its own footer.
+             * `image_credit` says the same thing in the record.
+             */
+            posterUrl: series.posterPath,
             backdropUrl: null,
-            imageCredit: null,
+            imageCredit: "Original title card",
             languageCode: series.languageCode,
             country: series.country,
             contentRating: series.contentRating,

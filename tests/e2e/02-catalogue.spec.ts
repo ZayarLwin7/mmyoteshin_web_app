@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { CATALOGUE_HINT, escapeRegExp, movieCards } from "./helpers";
+import { CATALOGUE_HINT, escapeRegExp, movieCards, openCatalogueFilters } from "./helpers";
 
 /**
  * Flow 2 — Filter and pagination.
@@ -9,12 +9,17 @@ import { CATALOGUE_HINT, escapeRegExp, movieCards } from "./helpers";
  * are a plain GET form, so a filtered view is shareable, canonical and works
  * without JavaScript. If the URL and the results ever disagree, that is the
  * bug this suite is designed to catch.
+ *
+ * The filter panel itself is a `<details>` disclosure that starts closed, so
+ * each test that drives a control opens it first — the same click a visitor
+ * makes. See `openCatalogueFilters`.
  */
 
 test.describe("catalogue filtering", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/movies");
     test.skip((await movieCards(page).count()) === 0, CATALOGUE_HINT);
+    await openCatalogueFilters(page);
   });
 
   test("sorting is reflected in the URL and survives a reload", async ({ page }) => {

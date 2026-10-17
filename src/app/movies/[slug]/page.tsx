@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 
 import { AdSlot } from "@/components/site/ad-slot";
 import { DownloadLinksTable } from "@/components/site/download-links-table";
-import { ExternalLinkNotice } from "@/components/site/external-link-notice";
 import { MetaRow } from "@/components/site/meta-row";
 import { MovieRail } from "@/components/site/movie-rail";
 import { Poster } from "@/components/site/poster";
@@ -334,16 +333,17 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ sl
                   </p>
                 </Alert>
               ) : (
-                <div className="space-y-4">
-                  <ExternalLinkNotice />
-
-                  <DownloadLinksTable links={links} />
-
-                  <p className="text-ink-subtle text-xs">
-                    Choosing a server opens a short page that names the destination and shows the
-                    advertisement which funds the catalogue, before you leave this site.
-                  </p>
-                </div>
+                /*
+                 * The table speaks for itself. It used to carry a paragraph
+                 * explaining that the links leave the site and a second one
+                 * describing the ad-funded hand-off page — three blocks of
+                 * prose above a four-row table, all of it restating what the
+                 * column headings already say. The safety disclosure still
+                 * exists, on `/download/[id]`: that is the page a visitor is
+                 * standing on at the moment they actually leave, which is where
+                 * it is read rather than skipped.
+                 */
+                <DownloadLinksTable links={links} />
               )}
             </section>
 

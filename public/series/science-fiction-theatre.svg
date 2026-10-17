@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" width="600" height="900" role="img" aria-label="Title card for Science Fiction Theatre">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#151226"/>
+      <stop offset="0.55" stop-color="#100e1a"/>
+      <stop offset="1" stop-color="#08070c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="30%" r="62%">
+      <stop offset="0" stop-color="#9a8bd0" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#9a8bd0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <rect width="600" height="900" fill="url(#glow)"/>
+
+  <text x="300" y="64" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" letter-spacing="6" fill="#e6e1f5" opacity="0.5">MM YOTESHIN</text>
+
+  <g fill="none" stroke="#9a8bd0">
+    <ellipse cx="300" cy="330" rx="170" ry="52" stroke-width="2.5" transform="rotate(-16 300 330)"/>
+    <ellipse cx="300" cy="330" rx="170" ry="52" stroke-width="1.5" stroke-opacity="0.4" transform="rotate(22 300 330)"/>
+    <circle cx="300" cy="330" r="40" stroke-width="3"/>
+    <circle cx="300" cy="330" r="14" fill="#9a8bd0" stroke="none" fill-opacity="0.85"/>
+    <circle cx="152" cy="288" r="7" fill="#9a8bd0" stroke="none"/>
+  </g>
+
+  <g font-family="Georgia, 'Times New Roman', serif" fill="#eeeaf8" text-anchor="middle">
+    <text x="300" y="556" font-size="56" letter-spacing="4">SCIENCE</text>
+    <text x="300" y="622" font-size="56" letter-spacing="4">FICTION</text>
+    <text x="300" y="688" font-size="56" letter-spacing="4">THEATRE</text>
+  </g>
+
+  <text x="300" y="744" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" letter-spacing="4" fill="#9a8bd0">1955 · SCIENCE FICTION</text>
+
+  <line x1="120" y1="794" x2="480" y2="794" stroke="#eeeaf8" stroke-opacity="0.12"/>
+  <text x="300" y="832" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" letter-spacing="4" fill="#eeeaf8" opacity="0.35">TITLE CARD · NOT OFFICIAL ARTWORK</text>
+</svg>

@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 
 import { AdSlot } from "@/components/site/ad-slot";
 import { DownloadLinksTable } from "@/components/site/download-links-table";
-import { ExternalLinkNotice } from "@/components/site/external-link-notice";
 import { MetaRow } from "@/components/site/meta-row";
 import { MovieRail } from "@/components/site/movie-rail";
 import { Poster } from "@/components/site/poster";
@@ -363,12 +362,6 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ s
                     ))}
                   </ul>
                 ) : null}
-
-                <p className="text-ink-subtle mt-5 text-xs leading-relaxed">
-                  {links.length > 0
-                    ? "Authorized download options for this series are listed in the section below. We only publish links whose authorization we have recorded and reviewed, so a season without links here simply has not had its distribution confirmed yet."
-                    : "No authorized distribution link is currently published for this series. We only publish links whose authorization we have recorded and reviewed — download options are added here as each season's distribution is confirmed."}
-                </p>
               </div>
             </section>
 
@@ -387,16 +380,12 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ s
                   </p>
                 </Alert>
               ) : (
-                <div className="space-y-4">
-                  <ExternalLinkNotice />
-
-                  <DownloadLinksTable links={links} />
-
-                  <p className="text-ink-subtle text-xs">
-                    Choosing a server opens a short page that names the destination and shows the
-                    advertisement which funds the catalogue, before you leave this site.
-                  </p>
-                </div>
+                /*
+                 * See the equivalent block on the film page: the table carries
+                 * its own headings, and the safety disclosure belongs on
+                 * `/download/[id]`, immediately before the visitor leaves.
+                 */
+                <DownloadLinksTable links={links} />
               )}
             </section>
 
