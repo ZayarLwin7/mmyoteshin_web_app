@@ -59,6 +59,25 @@ Two environments, two **separate** Supabase projects. Never point staging at the
 
    The direct connection string is not suitable either — it resolves over IPv6 only, and there is no
    pooling.
+
+   > **The session pooler caps the whole project at 15 connections (`pool_size: 15`).** Every warm
+   > serverless instance holds its own pool for as long as it lives, so the per-instance `max` in
+   > `src/db/client.ts` decides how many instances fit inside that budget. At `max: 5` only **three**
+   > instances fit; a fourth gets `EMAXCONNSESSION` and its Server Component render fails. On a
+   > client-side navigation that surfaces as React error #441 — "Something went wrong / This page
+   > cannot be loaded" — not as a retryable database error, because the failing render is the RSC
+   > payload for the route being navigated to. Measured: sixteen rapid page loads (a normal
+   > browse-and-prefetch burst) pinned all fifteen connections and locked the database out entirely.
+   > Production therefore runs at **`max: 2`**, letting seven instances coexist; the cost is one extra
+   > round trip on cold ISR renders only. Keep `max` under 3 on any serverless host.
+   >
+   > To reclaim connections pinned by a crashed or abandoned instance, terminate idle Supavisor
+   > backends **through the transaction pooler** (the session pooler is exactly what is exhausted):
+   >
+   > ```bash
+   > psql "$(grep '^DATABASE_URL=' .env.local | cut -d= -f2- | tr -d '"' | sed 's/:5432/:6543/')" \
+   >   -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename='postgres' AND application_name='Supavisor' AND state='idle' AND pid <> pg_backend_pid();"
+   > ```
 3. Keep the password in the host's secret store, not in the repository.
 
 ### 2.2 Configure environment variables
