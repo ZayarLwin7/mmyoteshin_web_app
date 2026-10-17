@@ -163,7 +163,7 @@ export function CatalogueView({
               type="search"
               defaultValue={filters.q ?? ""}
               placeholder="Search titles"
-              className="border-line-strong bg-surface-sunken text-ink placeholder:text-ink-subtle h-10 rounded-lg border px-3 text-sm"
+              className="border-line-strong bg-surface-sunken text-ink placeholder:text-ink-subtle hover:border-accent/60 focus:border-accent focus-visible:outline-accent h-10 cursor-pointer rounded-lg border px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-1"
             />
           </div>
 
@@ -176,7 +176,7 @@ export function CatalogueView({
                 id="filter-genre"
                 name="genre"
                 defaultValue={filters.genre ?? ""}
-                className="border-line-strong bg-surface-sunken text-ink h-10 rounded-lg border px-3 text-sm"
+                className="border-line-strong bg-surface-sunken text-ink placeholder:text-ink-subtle hover:border-accent/60 focus:border-accent focus-visible:outline-accent h-10 cursor-pointer rounded-lg border px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-1"
               >
                 <option value="">All genres</option>
                 {genres.map((genre) => (
@@ -197,7 +197,7 @@ export function CatalogueView({
                 id="filter-year"
                 name="year"
                 defaultValue={filters.year ? String(filters.year) : ""}
-                className="border-line-strong bg-surface-sunken text-ink h-10 rounded-lg border px-3 text-sm"
+                className="border-line-strong bg-surface-sunken text-ink placeholder:text-ink-subtle hover:border-accent/60 focus:border-accent focus-visible:outline-accent h-10 cursor-pointer rounded-lg border px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-1"
               >
                 <option value="">Any year</option>
                 {years.map((year) => (
@@ -217,7 +217,7 @@ export function CatalogueView({
               id="filter-sort"
               name="sort"
               defaultValue={filters.sort}
-              className="border-line-strong bg-surface-sunken text-ink h-10 rounded-lg border px-3 text-sm"
+              className="border-line-strong bg-surface-sunken text-ink placeholder:text-ink-subtle hover:border-accent/60 focus:border-accent focus-visible:outline-accent h-10 cursor-pointer rounded-lg border px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-1"
             >
               {Object.entries(SORT_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>

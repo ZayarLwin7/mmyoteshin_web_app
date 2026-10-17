@@ -122,7 +122,15 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ sl
 
   const { movie, genres, review, links } = detail;
 
-  const rating = review ? formatRating(review.rating, review.ratingScale) : null;
+  /*
+    The raw score — `review.rating`, e.g. `"7.5"` — not `formatRating`, which
+    returns the score *with* its scale (`"7.5 / 10"`). The badge renders the
+    number on its own and the summary appends its own `/ 10`, so passing the
+    formatted string showed the scale twice: `★ 7.5 / 10` on the poster and
+    `7.5 / 10 / 10` in the masthead. `formatRating` is still used above, where
+    the `film:rating` meta tag genuinely wants the score and scale together.
+  */
+  const rating = review?.rating ?? null;
   const runtime = formatRuntime(movie.runtimeMinutes);
   const synopsisParagraphs = toParagraphs(movie.synopsis);
   const reviewParagraphs = review ? toParagraphs(review.body) : [];
@@ -366,8 +374,9 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ sl
                       {publicEnv.siteName} on a documented{" "}
                       {Number.parseInt(formatRatingScale(review.ratingScale), 10)}-point scale. It
                       reflects the editorial team&apos;s own assessment and is not an aggregate of
-                      user votes or of any third-party service. Scores are shown with their scale
-                      everywhere they appear, and are never combined with a different rating system.
+                      user votes or of any third-party service. The scale is stated once, here — on
+                      posters the score appears as a star and number alone — and is never combined
+                      with a different rating system.
                     </p>
                   </div>
                 ) : null}

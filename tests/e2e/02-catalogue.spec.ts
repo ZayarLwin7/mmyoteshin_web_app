@@ -70,6 +70,38 @@ test.describe("catalogue filtering", () => {
   });
 });
 
+/**
+ * Kind separation between the two catalogues.
+ *
+ * A film is only ever listed at /movies and a series only at /series. The
+ * Series feature originally scoped the /series listing but not /movies, so the
+ * seeded series appeared in the films grid linking to /series/<slug> — the
+ * two listings had to be told apart by their cards' own links.
+ */
+test.describe("catalogue kind separation", () => {
+  test("each listing links only to its own kind", async ({ page }) => {
+    const cardHrefs = async () =>
+      page
+        .locator("article.group a[href^='/movies/'], article.group a[href^='/series/']")
+        .evaluateAll((els) =>
+          els.map((el) => (el as HTMLAnchorElement).getAttribute("href") ?? ""),
+        );
+
+    await page.goto("/movies");
+    const filmHrefs = await cardHrefs();
+    test.skip(filmHrefs.length === 0, CATALOGUE_HINT);
+    expect(filmHrefs.every((href) => href.startsWith("/movies/"))).toBe(true);
+
+    await page.goto("/series");
+    const seriesHrefs = await cardHrefs();
+    test.skip(
+      seriesHrefs.length === 0,
+      "Requires at least one published series. Run `pnpm db:seed:series` against a development database.",
+    );
+    expect(seriesHrefs.every((href) => href.startsWith("/series/"))).toBe(true);
+  });
+});
+
 test.describe("catalogue pagination", () => {
   test("pagination uses real links and marks the current page", async ({ page }) => {
     await page.goto("/movies");

@@ -81,9 +81,14 @@ export function Poster({
           aria-hidden="true"
           className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[linear-gradient(150deg,var(--color-surface-raised),var(--color-surface-sunken))] p-4 text-center"
         >
+          {/*
+            A film-frame motif rather than a bare icon: the perforated edge
+            says "this is deliberately a poster slot", which reads as designed
+            rather than as an image that failed to load.
+          */}
           <svg
             viewBox="0 0 24 24"
-            className="text-ink-subtle size-7"
+            className="text-accent-dim size-8"
             fill="none"
             aria-hidden="true"
           >
@@ -94,9 +99,16 @@ export function Poster({
               strokeLinecap="round"
               strokeLinejoin="round"
             />
+            <path
+              d="M7 5v14 M17 5v14"
+              stroke="currentColor"
+              strokeWidth="1"
+              strokeDasharray="2 3"
+              opacity="0.5"
+            />
           </svg>
           {fallbackLabel ? (
-            <span className="text-2xs text-ink-subtle font-medium tracking-wide uppercase">
+            <span className="text-ink-subtle text-xs font-medium tracking-wide uppercase">
               {fallbackLabel}
             </span>
           ) : null}

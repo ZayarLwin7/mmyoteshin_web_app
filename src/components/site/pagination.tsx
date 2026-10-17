@@ -73,8 +73,8 @@ export function Pagination({
           className={cn(
             linkClasses,
             pageNumber === page
-              ? "border-accent bg-accent text-accent-ink active:brightness-90"
-              : "border-line-strong text-ink-muted hover:border-accent hover:text-accent",
+              ? "border-accent bg-accent text-accent-ink active:bg-accent-dim active:brightness-100"
+              : "border-line-strong text-ink-muted hover:border-accent hover:bg-accent/10 hover:text-accent active:border-accent active:bg-accent/25 active:text-accent",
           )}
         >
           <span className="sr-only">Page </span>

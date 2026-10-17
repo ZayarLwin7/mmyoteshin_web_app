@@ -72,9 +72,11 @@ export default async function GenrePage({
       genreSlug: slug,
       year: filters.year ?? null,
       sort: filters.sort,
+      // Films only — this is the films view of the genre.
+      contentKind: "movie",
     }),
-    listGenresWithCounts(),
-    listYearsWithCounts(),
+    listGenresWithCounts("movie"),
+    listYearsWithCounts("movie"),
   ]);
 
   if (!genre) notFound();

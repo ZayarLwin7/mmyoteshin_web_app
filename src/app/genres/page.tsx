@@ -35,12 +35,22 @@ export default async function GenresPage() {
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {populated.map((genre) => (
             <li key={genre.id}>
+              {/*
+                Hover answers "this is a card you can click" (border, tinted
+                fill, a 1px lift); active answers "your press registered"
+                (the lift cancels, the fill goes deeper, the card shrinks
+                slightly). The two are deliberately different — on touch
+                there is no hover at all, so a missing active state reads as
+                a dead control.
+              */}
               <Link
                 href={`/genres/${genre.slug}`}
-                className="rounded-panel border-line bg-surface hover:border-accent block h-full border p-5 transition-colors"
+                className="rounded-panel border-line bg-surface hover:border-accent hover:bg-accent/5 active:border-accent active:bg-accent/15 group focus-visible:outline-accent block h-full border p-5 transition duration-150 ease-out hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 active:translate-y-0 active:scale-[0.99]"
               >
                 <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="text-heading text-ink font-semibold">{genre.name}</h2>
+                  <h2 className="text-heading text-ink group-hover:text-accent font-semibold">
+                    {genre.name}
+                  </h2>
                   <span className="text-ink-subtle text-xs">
                     {genre.movieCount} film{genre.movieCount === 1 ? "" : "s"}
                   </span>

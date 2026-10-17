@@ -69,9 +69,12 @@ async function MoviesResults({
       language: filters.language ?? null,
       contentRating: filters.rating ?? null,
       sort: filters.sort,
+      // Films only. Series live at /series; without this the seeded series
+      // appeared in this grid, linking to /series/<slug> detail pages.
+      contentKind: "movie",
     }),
-    listGenresWithCounts(),
-    listYearsWithCounts(),
+    listGenresWithCounts("movie"),
+    listYearsWithCounts("movie"),
   ]);
 
   return (

@@ -11,13 +11,7 @@ import { Button, LinkButton } from "@/components/ui/button";
  * internal is exposed to the visitor. The digest is shown so it can be quoted
  * when reporting the problem, and it is what appears in the server logs.
  */
-export default function ErrorBoundary({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
+export default function ErrorBoundary({ error }: { error: Error & { digest?: string } }) {
   useEffect(() => {
     // Client-side breadcrumb only; the server logs the authoritative entry.
     console.error("[ui] route error", { digest: error.digest });
@@ -36,7 +30,18 @@ export default function ErrorBoundary({
       ) : null}
 
       <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Button onClick={reset}>Try again</Button>
+        {/*
+          A hard reload, not `reset()`.
+
+          This boundary most often catches a **failed server render** — the
+          React error is #441, "an error occurred in the Server Components
+          render", and the payload the client was handed is already broken.
+          `reset()` re-renders that same payload and fails identically, so the
+          button would look alive while doing nothing. Reloading refetches the
+          page as plain HTML, which is the one path that does not depend on the
+          streamed payload.
+        */}
+        <Button onClick={() => window.location.reload()}>Try again</Button>
         <LinkButton href="/movies" variant="secondary">
           Browse the catalogue
         </LinkButton>

@@ -92,6 +92,21 @@ function createSqlClient() {
      * Serverless instances are short-lived, so production keeps the pool small
      * to avoid exhausting the pooler's connection budget across many lambdas.
      *
+     * The Supabase **session** pooler caps the whole project at 15 connections
+     * (port 5432), and every warm Vercel function instance holds its own pool
+     * for as long as it lives. At `max: 5` only **three** instances fit inside
+     * that budget — a fourth gets `EMAXCONNSESSION` and its render fails, which
+     * on a client-side navigation surfaces as "Something went wrong" rather
+     * than as a retryable error. Measured: sixteen rapid page loads (a normal
+     * browse-and-prefetch burst) pinned all fifteen connections and locked the
+     * database out entirely.
+     *
+     * `max: 2` lets **seven** instances coexist. The cost is bounded: pages
+     * issue their queries in one `Promise.all`, so a batch of three now runs as
+     * two waves instead of one, adding a single ~275 ms round trip — and only
+     * on a cache miss, since the catalogue pages are ISR-cached. Availability
+     * beats a cold-render round trip.
+     *
      * Development is the opposite case: one long-lived process, and a single
      * page render issues several queries concurrently. With `max: 2` the third
      * of those waits for a free connection, which adds a full round trip to a
@@ -99,7 +114,7 @@ function createSqlClient() {
      * lets them run truly in parallel — measured, four concurrent queries cost
      * the same as one once the connections exist.
      */
-    max: env.isProduction ? 5 : 10,
+    max: env.isProduction ? 2 : 10,
     /*
      * Kept alive well past the 20 s this used to be.
      *

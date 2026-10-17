@@ -110,7 +110,14 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ s
 
   const { movie, genres, review, links } = detail;
 
-  const rating = review ? formatRating(review.rating, review.ratingScale) : null;
+  /*
+    The raw score — `review.rating`, e.g. `"7.5"` — not `formatRating`, which
+    returns the score *with* its scale (`"7.5 / 10"`). The badge renders the
+    number on its own and the summary appends its own `/ 10`, so passing the
+    formatted string showed the scale twice. `formatRating` is still used above,
+    where the `film:rating` meta tag genuinely wants both together.
+  */
+  const rating = review?.rating ?? null;
   const length = formatSeriesLength(movie.seasonCount, movie.episodeCount);
   const synopsisParagraphs = toParagraphs(movie.synopsis);
   const reviewParagraphs = review ? toParagraphs(review.body) : [];
@@ -271,11 +278,16 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ s
               />
 
               <div className="mt-6">
+                {/*
+                  A season count is required to publish a series, so `#episodes`
+                  always exists here. With no links published, the episodes
+                  breakdown is the most useful destination — not the review.
+                */}
                 <a
-                  href="#downloads"
+                  href={links.length > 0 ? "#downloads" : "#episodes"}
                   className="bg-accent text-accent-ink hover:bg-accent-strong inline-flex h-10 items-center rounded-full px-5 text-sm font-medium transition-colors"
                 >
-                  {links.length > 0 ? "Jump to download options" : "Jump to the review"}
+                  {links.length > 0 ? "Jump to download options" : "Jump to episodes"}
                 </a>
               </div>
             </div>
@@ -299,6 +311,66 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ s
                 </div>
               </section>
             ) : null}
+
+            {/* ---- Episodes -------------------------------------------- */}
+            {/*
+              A season count is a publication blocker, so a live series always
+              has this section. It exists because the season and episode counts
+              are the facts visitors came for — the download links below are
+              per-series records, and without this the only place those counts
+              appeared was the small sidebar, easy to miss.
+            */}
+            <section id="episodes" aria-labelledby="episodes-heading" className="scroll-mt-24">
+              <h2 id="episodes-heading" className="text-heading text-ink mb-4 font-semibold">
+                Episodes
+              </h2>
+
+              <div className="rounded-panel border-line bg-surface border p-5">
+                <dl className="flex flex-wrap gap-x-10 gap-y-4">
+                  {movie.seasonCount ? (
+                    <div>
+                      <dt className="text-ink-subtle text-xs">Seasons</dt>
+                      <dd className="text-ink text-2xl font-semibold tabular-nums">
+                        {movie.seasonCount}
+                      </dd>
+                    </div>
+                  ) : null}
+                  {movie.episodeCount ? (
+                    <div>
+                      <dt className="text-ink-subtle text-xs">Episodes</dt>
+                      <dd className="text-ink text-2xl font-semibold tabular-nums">
+                        {movie.episodeCount}
+                      </dd>
+                    </div>
+                  ) : null}
+                </dl>
+
+                {movie.seasonCount && movie.seasonCount > 0 ? (
+                  <ul className="border-line mt-5 flex flex-wrap gap-2 border-t pt-5">
+                    {/*
+                      The season list is derived from the count alone — a real
+                      fact — not invented episode data. It gives the section the
+                      shape of a season breakdown without promising per-episode
+                      detail the catalogue does not hold.
+                    */}
+                    {Array.from({ length: movie.seasonCount }, (_, index) => (
+                      <li
+                        key={index}
+                        className="border-line-strong text-ink-muted rounded-full border px-3 py-1 text-xs font-medium"
+                      >
+                        Season {index + 1}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+
+                <p className="text-ink-subtle mt-5 text-xs leading-relaxed">
+                  {links.length > 0
+                    ? "Authorized download options for this series are listed in the section below. We only publish links whose authorization we have recorded and reviewed, so a season without links here simply has not had its distribution confirmed yet."
+                    : "No authorized distribution link is currently published for this series. We only publish links whose authorization we have recorded and reviewed — download options are added here as each season's distribution is confirmed."}
+                </p>
+              </div>
+            </section>
 
             {/* ---- Authorized links ------------------------------------ */}
             <section id="downloads" aria-labelledby="downloads-heading" className="scroll-mt-24">
@@ -355,8 +427,9 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ s
                       {publicEnv.siteName} on a documented{" "}
                       {Number.parseInt(formatRatingScale(review.ratingScale), 10)}-point scale. It
                       reflects the editorial team&apos;s own assessment and is not an aggregate of
-                      user votes or of any third-party service. Scores are shown with their scale
-                      everywhere they appear, and are never combined with a different rating system.
+                      user votes or of any third-party service. The scale is stated once, here — on
+                      posters the score appears as a star and number alone — and is never combined
+                      with a different rating system.
                     </p>
                   </div>
                 ) : null}

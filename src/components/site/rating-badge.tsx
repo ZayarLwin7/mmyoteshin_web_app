@@ -3,15 +3,15 @@ import { cn, formatRatingScale } from "@/lib/utils";
 /**
  * The editorial score, as a star in the corner of a poster.
  *
- * It sits in the **top-right** corner, which is where a reader's eye lands after
- * the artwork and where it cannot collide with the certification badge in the
- * bottom-left. The two are different facts — "what it is rated" and "what we
- * scored it" — and putting them in opposite corners keeps them legible on a
- * three-column phone grid, where the card is barely 100px wide.
+ * It sits in the **top-right** corner, opposite the certification badge in the
+ * **top-left**. The two are different facts — "what it is rated" and "what we
+ * scored it" — and keeping them in opposite corners of the same edge keeps them
+ * legible on a three-column phone grid, where the card is barely 100px wide.
  *
- * The scale is stated on the badge itself, as `/10`, rather than only in prose
- * elsewhere on the page. A bare number next to a star is ambiguous: readers
- * reasonably assume 5, or 100, and neither is true here.
+ * The number is shown on its own, without a `/10`. The scale is stated once, in
+ * the methodology note on each detail page, rather than repeated on every card
+ * — a bare star and number reads as a rating everywhere else on the web, and the
+ * repetition added noise at card size.
  *
  * The backdrop is a dark scrim rather than a palette colour so the score stays
  * legible over any artwork, including a pale poster where an amber fill would
@@ -26,15 +26,12 @@ export function RatingBadge({
   /** The score as stored, e.g. `"8.5"`. Null means there is no published review. */
   rating: string | null;
   /** The top of the scale the score is measured against, e.g. `"10"`. */
-  scale?: string;
+  scale?: string | null;
   className?: string;
   /** `sm` for the narrowest cards, `md` everywhere else. */
   size?: "sm" | "md";
 }) {
   if (!rating) return null;
-
-  // `scale` arrives straight from a `numeric(4,1)` column, i.e. `"10.0"`.
-  const max = formatRatingScale(scale);
 
   const star = size === "sm" ? "size-3" : "size-3.5";
 
@@ -56,22 +53,18 @@ export function RatingBadge({
       </svg>
       <span>{rating}</span>
       {/*
-        Announced as part of the score rather than rendered as visible text: on a
-        three-column card there is no room for "out of 10" at a readable size,
-        and the visible "/10" plus this accessible string covers both the sighted
-        and the screen-reader case.
+        The scale is announced rather than rendered: screen-reader users get
+        "7.8 out of 10", sighted users see the star and the number, and neither
+        gets a `/10` repeated across every card on the page.
       */}
-      <span className="sr-only">out of {max}</span>
-      <span aria-hidden="true" className="text-accent/70">
-        /{max}
-      </span>
+      <span className="sr-only">out of {formatRatingScale(scale)}</span>
     </span>
   );
 }
 
 /**
- * The score as it appears in a page's masthead — larger, and with the scale
- * spelled out in full because there is room for it.
+ * The score as it appears in a page's masthead — larger, and still carrying its
+ * scale, because here there is room for it.
  */
 export function RatingSummary({
   rating,

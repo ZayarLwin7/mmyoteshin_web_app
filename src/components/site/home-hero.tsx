@@ -1,30 +1,31 @@
 import { LinkButton } from "@/components/ui/button";
-import { formatRating, formatRatingScale, formatRuntime, formatSeriesLength } from "@/lib/utils";
+import { formatRuntime, formatSeriesLength } from "@/lib/utils";
 import type { MovieCard as MovieCardData } from "@/db/queries/public";
 
 import { MetaRow } from "./meta-row";
 import { Poster } from "./poster";
-import { RatingBadge } from "./rating-badge";
+import { RatingBadge, RatingSummary } from "./rating-badge";
 
 /**
- * Home hero.
+ * Home hero — the featured record, staged.
  *
- * The film's poster is shown in its **own frame**, next to the title, rather
- * than stretched across the whole section. The previous full-bleed treatment
- * used the artwork as a `cover` backdrop, which for a film whose only artwork
- * is a landscape still or a title card meant a small image blown up to the
- * viewport width and cropped — and the crop was the most noticeable thing about
- * it. A framed poster keeps the same 2:3 frame as the catalogue cards, so the
- * hero and the grid look uniform — the image fills the frame and landscape
- * artwork is cropped on its sides, exactly as on the cards.
+ * The poster sits in its **own frame** at a size that reads as the subject of
+ * the section (128px on a phone, up to 240px on a desktop) rather than as a
+ * catalogue thumbnail pinned beside a title. It carries the same corner badges
+ * as every card — certification top-left, editorial star top-right — so the
+ * hero and the grid speak the same visual language.
  *
- * The blurred wash behind it keeps the section from being a flat rectangle. It
- * is the same artwork, so it costs no extra request, and it is requested at a
- * deliberately small `sizes` because at this blur and opacity the browser would
- * be downloading detail nobody can see.
+ * Behind it, the artwork is blown up and blurred into a wash that fades into
+ * the canvas, and a vignette darkens the left edge so the title stays legible
+ * whatever the artwork's brightness. It is the same image, so it costs no extra
+ * request, and it is requested at a deliberately small `sizes` because at this
+ * blur and opacity the browser would be downloading detail nobody can see.
+ *
+ * The section has no `min-height`: the poster sets the height, so there is no
+ * empty band between the header and the title, and the layout cannot break on
+ * artwork of any aspect ratio.
  */
 export function HomeHero({ movie }: { movie: MovieCardData }) {
-  const rating = formatRating(movie.rating, movie.ratingScale);
   const runtime = formatRuntime(movie.runtimeMinutes);
   const length = formatSeriesLength(movie.seasonCount, movie.episodeCount);
   // A series can be the featured entry when no film is, so the hero follows
@@ -35,44 +36,47 @@ export function HomeHero({ movie }: { movie: MovieCardData }) {
   return (
     <section
       aria-labelledby="hero-title"
-      className="border-line relative isolate overflow-hidden border-b"
+      className="border-line bg-surface relative isolate overflow-hidden border-b"
     >
-      {/* Decorative wash — hidden from assistive technology. */}
-      <div className="absolute inset-0 -z-10" aria-hidden="true">
+      {/* Decorative wash and vignette — hidden from assistive technology. */}
+      <div className="absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
         <Poster
           src={movie.posterUrl}
           alt=""
           aspect="aspect-auto h-full w-full"
           sizes="320px"
-          className="h-full w-full scale-110 rounded-none opacity-30 blur-3xl"
+          className="h-full w-full scale-125 rounded-none opacity-40 blur-3xl saturate-150"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(to_top,var(--color-canvas)_10%,color-mix(in_oklab,var(--color-canvas)_75%,transparent)_55%,transparent_100%)]" />
+        {/* Fade the wash into the canvas at the bottom, and darken the left
+            half so the title is readable over bright artwork. */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_top,var(--color-canvas)_8%,color-mix(in_oklab,var(--color-canvas)_80%,transparent)_60%,transparent_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-canvas)_0%,color-mix(in_oklab,var(--color-canvas)_60%,transparent)_45%,transparent_75%)]" />
       </div>
 
-      {/*
-       * No `min-height`. The section used to reserve up to 40rem and push the
-       * content to the bottom of it, which left a large empty band between the
-       * header and the title. The poster now sets the height, so the spacing
-       * above the title is just the padding.
-       *
-       * The poster column is present at **every** width. An earlier revision
-       * hid it below `sm`, which left phones with no artwork at all — the
-       * full-bleed backdrop it replaced had been visible everywhere. It is
-       * simply narrower on small screens rather than absent.
-       */}
-      <div className="container-page grid grid-cols-[104px_minmax(0,1fr)] items-start gap-5 py-8 sm:grid-cols-[136px_minmax(0,1fr)] sm:items-center sm:gap-8 sm:py-10 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-12 lg:py-12">
+      <div className="container-page grid grid-cols-[112px_minmax(0,1fr)] items-center gap-5 py-10 sm:grid-cols-[168px_minmax(0,1fr)] sm:gap-8 sm:py-12 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-14 lg:py-16">
         <div className="relative">
-          <Poster
-            src={movie.posterUrl}
-            alt={`${movie.title} poster`}
-            sizes="(min-width: 1024px) 200px, (min-width: 640px) 136px, 104px"
-            priority
-          />
-          <RatingBadge
-            rating={rating}
-            scale={movie.ratingScale}
-            className="absolute top-2 right-2"
-          />
+          {/*
+            The ring and shadow lift the poster off the wash — a framed print
+            on a wall rather than an image floating in a rectangle.
+          */}
+          <div className="rounded-card ring-accent/20 shadow-surface-raised/50 relative overflow-hidden shadow-2xl ring-1">
+            <Poster
+              src={movie.posterUrl}
+              alt={`${movie.title} poster`}
+              sizes="(min-width: 1024px) 240px, (min-width: 640px) 168px, 112px"
+              priority
+            />
+            {movie.contentRating ? (
+              <span className="border-accent/25 text-ink text-2xs absolute top-2 left-2 inline-flex items-center rounded-full border bg-black/75 px-2 py-0.5 font-semibold tracking-wide backdrop-blur-sm">
+                {movie.contentRating}
+              </span>
+            ) : null}
+            <RatingBadge
+              rating={movie.rating}
+              scale={movie.ratingScale}
+              className="absolute top-2 right-2"
+            />
+          </div>
         </div>
 
         <div className="min-w-0">
@@ -80,22 +84,23 @@ export function HomeHero({ movie }: { movie: MovieCardData }) {
             {movie.contentKind === "series" ? "Featured series" : "Featured film"}
           </p>
 
-          <h1 id="hero-title" className="text-display text-ink font-semibold">
+          <h1
+            id="hero-title"
+            className="text-display text-ink text-3xl leading-tight font-semibold sm:text-4xl lg:text-5xl"
+          >
             {movie.title}
           </h1>
 
+          {/*
+            Year, length and genres. The score is on the poster as a star in the
+            corner, and the masthead's own rating line sits below the title —
+            putting it here too would say it three times.
+          */}
           <MetaRow
-            className="mt-5 text-sm"
+            className="mt-4 text-sm"
             items={[
               { key: "year", content: movie.releaseYear },
               { key: "length", content: runtime ?? length },
-              {
-                key: "rating",
-                content: rating
-                  ? `Editorial score ${rating} / ${formatRatingScale(movie.ratingScale)}`
-                  : null,
-                valueClassName: "text-accent",
-              },
               {
                 key: "genres",
                 content:
@@ -103,6 +108,8 @@ export function HomeHero({ movie }: { movie: MovieCardData }) {
               },
             ]}
           />
+
+          <RatingSummary rating={movie.rating} scale={movie.ratingScale} />
 
           <div className="mt-8 flex flex-wrap gap-3">
             <LinkButton href={detailHref} size="lg">

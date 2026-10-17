@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
-import { formatRating, formatRuntime, formatSeriesLength } from "@/lib/utils";
+import { formatRuntime, formatSeriesLength } from "@/lib/utils";
 import type { MovieCard as MovieCardData } from "@/db/queries/public";
 
 import { MetaRow } from "./meta-row";
@@ -24,7 +24,6 @@ export function MovieCard({
   priority?: boolean;
   sizes?: string;
 }) {
-  const rating = formatRating(movie.rating, movie.ratingScale);
   const runtime = formatRuntime(movie.runtimeMinutes);
   const length = formatSeriesLength(movie.seasonCount, movie.episodeCount);
 
@@ -66,16 +65,16 @@ export function MovieCard({
             {movie.title}
           </h3>
 
+          {/*
+            Year and length only. The score lives on the poster as a star in the
+            corner — repeating it under the title said the same thing twice and
+            made the caption line the busiest part of the card.
+          */}
           <MetaRow
             className="gap-y-1 text-xs [--meta-gap:0.5rem]"
             items={[
               { key: "year", content: movie.releaseYear },
               { key: "length", content: runtime ?? length },
-              {
-                key: "rating",
-                content: rating,
-                valueClassName: "text-accent font-medium",
-              },
             ]}
           />
 
@@ -87,18 +86,27 @@ export function MovieCard({
         </div>
       </Link>
 
+      {/*
+        The certification sits in the **top-left** corner and the score in the
+        **top-right**: two facts about the same artwork, one on each end of the
+        same edge, so they never stack or collide however narrow the card gets.
+      */}
       {movie.contentRating ? (
-        <Badge className="absolute bottom-2 left-2 border-black/40 bg-black/70 text-white backdrop-blur-sm">
+        <Badge className="absolute top-2 left-2 border-black/40 bg-black/70 text-white backdrop-blur-sm">
           {movie.contentRating}
         </Badge>
       ) : null}
 
       {/*
-        The score goes in the **top-right** corner, opposite the certification
-        badge, so the two never overlap and the number is legible over any
-        artwork. See `RatingBadge` for why the scale is shown as `/10`.
+        The raw score — `movie.rating`, e.g. `"7.8"` — not `formatRating`, which
+        returns the score *with* its scale (`"7.8 / 10"`). The badge used to
+        render "7.8 / 10 /10": the scale twice, once from each.
       */}
-      <RatingBadge rating={rating} scale={movie.ratingScale} className="absolute top-2 right-2" />
+      <RatingBadge
+        rating={movie.rating}
+        scale={movie.ratingScale}
+        className="absolute top-2 right-2"
+      />
     </article>
   );
 }

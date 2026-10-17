@@ -61,9 +61,11 @@ export default async function YearPage({
       genreSlug: filters.genre ?? null,
       year,
       sort: filters.sort,
+      // Films only — this is the films view of the year.
+      contentKind: "movie",
     }),
-    listGenresWithCounts(),
-    listYearsWithCounts(),
+    listGenresWithCounts("movie"),
+    listYearsWithCounts("movie"),
   ]);
 
   return (

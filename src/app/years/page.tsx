@@ -34,9 +34,15 @@ export default async function YearsPage() {
         <ul className="flex flex-wrap gap-2">
           {years.map((entry) => (
             <li key={entry.year}>
+              {/*
+                Same three-state treatment as the buttons: hover = interactive
+                (tinted fill, accent border), active = pressed (deeper fill,
+                accent text, slight shrink). A chip that only changes its
+                border colour on hover reads as static text.
+              */}
               <Link
                 href={`/years/${entry.year}`}
-                className="border-line-strong text-ink-muted hover:border-accent hover:text-accent inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors"
+                className="border-line-strong bg-surface text-ink-muted hover:border-accent hover:bg-accent/10 hover:text-accent active:border-accent active:bg-accent/25 active:text-accent focus-visible:outline-accent inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
               >
                 {entry.year}
                 <span className="text-ink-subtle text-xs">{entry.movieCount}</span>
